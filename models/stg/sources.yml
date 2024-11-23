@@ -1,0 +1,13 @@
+version: 2
+
+sources:
+  - name: raw
+    database: superstore  
+    schema: raw  
+    
+    tables:
+      - name: employees
+      - name: orders
+        freshness: # default freshness
+          warn_after: {count: 24, period: hour}
+        loaded_at_field: updated_at

@@ -1,0 +1,91 @@
+# unit tests for all stage models models go here
+
+version: 2
+
+models:
+  - name: stg_orders
+    description: orders ingestion stage layere, it is the master data essentially for the star schema. 
+    columns:
+      - name: order_id
+        description: Natural key used to create the order_surr_id, can be used on its own as it is unique.
+        tests:
+          - unique
+          - not_null
+      - name: order_date
+          - not_null
+      - name: ship_date
+          - not_null 
+      - name: ship_mode
+        description: method of shipping as chosen by the customer
+        tests:
+          - not_null
+      - name: customer_id
+        description: primary key for customers table
+        tests:
+          - not_null
+      - name: customer_name
+        description: name of customer
+        tests:
+          - not_null
+      - name: emp_id
+        description: employee id tied to sale of product and relation with customer
+        tests:
+          - not_null
+      - name: country_region
+        description: country, cannot be null as it is used downstrem to create a surrogate
+        tests:
+          - not_null
+      - name: state
+        description: state, cannot be null as it is used downstrem to create a surrogate
+        tests:
+          - not_null 
+      - name: city
+        description: city, cannot be nullas it is used downstrem to create a surrogate
+        tests:
+          - not_null
+      - name: postal_code
+        description: zip code, cannot be null as it is used downstrem to create a surrogate
+        tests:
+          - not_null
+      - name: region
+        description: region, cannot be nullas it is used downstrem to create a surrogate
+        tests:
+          - not_null
+      - name: product_id
+        description: primary key for product table
+        tests:
+          - not_null
+      - name: category
+        description: catagorizes the product, cannot be nullas it is needed downstrema to create a surrogate key.
+        tests:
+          - not_null
+      - name: sub_category
+        description: catagorizes the product, cannot be nullas it is needed downstrema to create a surrogate key.
+        tests:
+          - not_null
+      - name: product_name
+        description: catagorizes the product, cannot be nullas it is needed downstrema to create a surrogate key.
+        tests:
+          - not_null
+      - name: quantity
+        tests:
+          - positive_value
+      - name: sales
+        tests:
+          - positive_value
+      
+      
+            
+          
+    
+      
+
+
+ 
+      
+              
+
+ 
+
+
+  

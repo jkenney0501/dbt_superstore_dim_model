@@ -1,0 +1,33 @@
+version: 2
+
+models:
+  - name: stg_employees
+    description: Employees table that show employee information, mainly for tracking purposes in reporting. Type 2 SCD
+    columns:
+      - name: emp_id
+        description: Primary key for employee table
+        tests:
+          - not_null
+          - unique
+      - name: first_name
+        description: employees first name.
+        tests:
+          - not_null
+      - name: last_name
+        description: employees last name.
+        tests:
+          - not_null
+      - name: age
+        description: employees age.
+        tests:
+          - not_null   
+      - name: hire_date
+        description: date of employee hire, cannot be null.
+        tests:
+          - not_null
+      - name: status
+        description: employee status can be either A - active, T- terminated or LA leavr of absence. Cannot be null.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['A', 'T', 'L/A', 'SB']
