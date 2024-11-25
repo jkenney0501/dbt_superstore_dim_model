@@ -1,3 +1,10 @@
+{{
+    config(
+        materialized='ephemeral'
+    )
+}}
+
+
 WITH emps AS(
     SELECT 
         -- add surrogate key

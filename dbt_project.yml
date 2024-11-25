@@ -40,8 +40,9 @@ models:
     stage:
       +materialized: view
     marts:
-      +materialized: table
+      +materialized: view
     dim:
       +materialized: table
-    fact:
+    fct:
       +materialized: table
+   

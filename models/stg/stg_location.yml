@@ -1,0 +1,24 @@
+version: 2
+
+models:
+  - name: stg_location
+    description: location ingestion stage layere, it is the master data essentially for the star schema. 
+    columns:
+      - name: country_region
+        description: country or region of the order
+        tests:
+          - not_null
+      - name: state
+          - not_null
+      - name: city
+        description: city of the prder/customer
+        tests:
+          - not_null
+      - name: postal_code
+        description: zip code for the order
+        tests:
+          - not_null
+      - name: region
+        description: region of the order
+        tests:
+          - not_null
