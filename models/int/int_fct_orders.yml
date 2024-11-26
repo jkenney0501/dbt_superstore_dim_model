@@ -1,0 +1,64 @@
+version: 2
+
+# this tests the intermediate layer before it moves to the final prod layer, if it fails then no load, similar to WAP.
+
+models:
+  - name: int_fct_orders
+    description: fact table for orders
+    columns:
+      - name: fct_primary_key
+        tests:
+          - unique  
+          - not_null
+      - name: cust_surr_id
+        description: customer surrogate key that relates to customers table
+        tests:
+         - not_null
+      - name: order_id
+        description: unique aplha-numeric for the order
+        tests:
+         - not_null
+         - unique  
+      - name: order_date_id
+        description: foreign key to date dimension
+        tests:
+         - not_null
+      - name: ship_date_id
+        description: foreign key to date dimension - join twice ot get both order/ship
+        tests:
+         - not_null
+      - name: ship_mode
+        description: method of shipping used for the order
+        tests:
+         - not_null
+      - name: emp_id
+        description: primary key to employees dimension
+        tests:
+         - not_null
+      - name: location_surr_id
+        description: foreign key to location dimension 
+        tests:
+         - not_null
+      - name: prod_surr_id
+        description: foreign key to product dimension 
+        tests:
+         - not_null
+      - name: sales
+        description: sales amount of the orders
+        tests:
+         - not_null
+         - positive_value
+      - name: quantity
+        description: the number of items in the order
+        tests:
+         - not_null
+         - positive_value
+      - name: cost_percent
+        description: the percentage of the order that is attributed to the overall cost of production
+        tests:
+         - not_null
+      - name: updated_at
+        description: batch load date - will differ as batches arrive daily
+        tests:
+         - not_null
+      

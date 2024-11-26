@@ -1,3 +1,10 @@
+{{
+    config(
+        materialized='ephemeral'
+    )
+}}
+
+
 WITH prod_scd AS(
     SELECT 
         {{ dbt_utils.generate_surrogate_key(['product_id', 'category', 'sub_category', 'product_name']) }} as prod_surr_id,

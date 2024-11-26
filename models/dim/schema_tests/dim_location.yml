@@ -1,0 +1,66 @@
+version: 2
+
+models:
+  - name: dim_location
+    description: location dimension, takes uniqie combination of state, city, region
+    columns:
+      - name: location_surr_id
+        description: primary key for location tabke - is - unique
+        tests:
+          - unique
+          - not_null
+      - name: country_region
+        description: the country or region
+        tests:
+          - not_null
+      - name: state
+        description: state location of order
+        tests:
+          - not_null
+      - name: city
+        description: location of city for order
+        tests:
+          - not_null
+      - name: postal_code
+        description: zip code of order
+        tests:
+          - not_null
+      - name: region
+        description: the region of the order
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - "East"
+                - "West"
+                - "Central"
+                - "South"
+
+# LOCATION contract
+  - name: dim_location # this should be an SCD also but.....
+    description: Store location table.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: location_surr_id
+        description: Primary key for locaton table.This is a surrogate composed of all columns (less created at) to create a unique location.
+        data_type: varchar
+      - name: country_region
+        description: The stores country or region (if outside the U.S)
+        data_type: varchar
+      - name: region
+        description: The stores regions.
+        data_type: varchar
+      - name: state
+        description: The locations state.
+        data_type: varchar
+      - name: city
+        description: The locations city.
+        data_type: varchar
+      - name: postal_code
+        description: The locations zip code.
+        data_type: varchar
+      - name: region
+        description: order region.
+        data_type: varchar
