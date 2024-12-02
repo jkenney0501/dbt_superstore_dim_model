@@ -1,0 +1,61 @@
+version: 2
+
+# current tables are derived from history so no tests for current
+models:
+  - name: dim_customers_history
+    description: >
+      Customers dimension table, modeled as SCD Type 2. 
+      Tracks historical records and the current active record using the `is_current` flag.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: cust_surr_id
+        description: Customer table primary key.
+        data_type: varchar
+        tests:
+          - unique
+          - not_null
+
+      - name: customer_id
+        description: >
+          Customer table natural key. This is the system-generated natural key.
+        data_type: varchar
+        tests:
+          - not_null
+
+      - name: customer_name
+        description: Customer full name, both first and last.
+        data_type: varchar
+        tests:
+          - not_null
+
+      - name: valid_from
+        description: >
+          The date the customer record became active in the current position or state.
+        data_type: timestamp
+        tests:
+          - not_null
+
+      - name: valid_to
+        description: >
+          The date the customer record ceased to be active in the current position or state.
+        data_type: timestamp
+        tests:
+          - not_null
+
+      - name: is_current
+        description: >
+          A flag that indicates the most recent record (`1` for active, `0` for historical records).
+        data_type: number
+        tests:
+          - not_null
+
+      - name: updated_at
+        description: Batch load date.
+        data_type: timestamp_ntz
+        tests:
+          - not_null
+
+
+  

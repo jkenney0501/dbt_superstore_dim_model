@@ -1,0 +1,61 @@
+version: 2
+
+models:
+  - name: dim_location
+    description: >
+      Location dimension table. Captures unique combinations of state, city, region, 
+      and postal code for orders. This table may include stores outside the U.S.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: location_surr_id
+        description: >
+          Primary key for the location table. This is a surrogate key composed 
+          of all columns (excluding created_at) to ensure uniqueness.
+        data_type: varchar
+        tests:
+          - unique
+          - not_null
+
+      - name: country_region
+        description: >
+          The store's country or region (if outside the U.S.).
+        data_type: varchar
+        tests:
+          - not_null
+
+      - name: state
+        description: >
+          The state where the store is located.
+        data_type: varchar
+        tests:
+          - not_null
+
+      - name: city
+        description: >
+          The city where the store is located.
+        data_type: varchar
+        tests:
+          - not_null
+
+      - name: postal_code
+        description: >
+          The postal code (ZIP code) of the store's location.
+        data_type: varchar
+        tests:
+          - not_null
+
+      - name: region
+        description: >
+          The region associated with the store or order location.
+          Accepted values include: "East", "West", "Central", "South".
+        data_type: varchar
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - "East"
+                - "West"
+                - "Central"
+                - "South"

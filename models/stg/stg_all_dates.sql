@@ -1,7 +1,7 @@
 -- this isnt really needed other than to create a date table one time and derive the rest from that table and it will be ephemeral at file level
 {{
     config(
-        materialized="ephemeral"
+        materialized="view"
     )
 }}
 

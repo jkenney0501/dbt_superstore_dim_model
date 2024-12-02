@@ -5,8 +5,8 @@
 }}
 
 
-WITH emps AS(
-    SELECT 
+with emps as(
+    select 
         -- add surrogate key
         {{ dbt_utils.generate_surrogate_key(['emp_id', 'first_name', 'last_name']) }} as emp_surr_id,
         emp_id,
@@ -20,14 +20,16 @@ WITH emps AS(
         status,
         --dbt_updated_at as updated_at,
         dbt_valid_from as valid_from,
-        CASE WHEN dbt_valid_to IS NULL THEN 1 ELSE 0 END AS is_current,
-        CASE 
-            WHEN dbt_valid_to IS NULL THEN '2099-12-31' 
-            ELSE dbt_valid_to
-        END AS valid_to,
+        case 
+            when dbt_valid_to is null then 1 else 0 
+        end as is_current,
+        case 
+            when dbt_valid_to is null then '2099-12-31' 
+            else dbt_valid_to
+        end as valid_to,
         updated_at,
 
-    FROM {{ ref('scd_t2_employees') }}
+    from {{ ref('scd_t2_employees') }}
 )
 
 SELECT *

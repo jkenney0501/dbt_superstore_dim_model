@@ -1,0 +1,64 @@
+version: 2
+
+models:
+  - name: dim_date
+    description: >
+      Creates a date dimension that breaks the date into months, weeks, year, 
+      quarters, holiday flags, weekday, and weekend.
+    columns:
+      - name: date_id
+        description: Primary key for the date dimension.
+        tests:
+          - unique
+          - not_null
+
+      - name: yr
+        description: The year as extracted from the date.
+        tests:
+          - not_null
+
+      - name: quarter_of_yr
+        description: The quarter of the year as calculated from the date.
+        tests:
+          - not_null
+
+      - name: mth
+        description: The month as extracted from the date.
+        tests:
+          - not_null
+
+      - name: day_of_wk
+        description: The day of the week as extracted from the date.
+        tests:
+          - not_null
+
+      - name: day_name
+        description: The name of the day in text as extracted from the numerical date.
+        tests:
+          - not_null
+
+      - name: wk_of_yr
+        description: The number of the week as extracted from the date.
+        tests:
+          - not_null
+
+      - name: weekend_flag
+        description: A flag indicating if the day is a weekend (0-6).
+        tests:
+          - not_null
+
+      - name: holiday_flag
+        description: >
+          A flag that identifies holidays based on the day and month of the year. 
+          For dynamic holidays such as Thanksgiving, the week, month, and day name 
+          are used to reflect accurate holiday flags.
+        tests:
+          - not_null
+
+      - name: refreshed_at
+        description: >
+          Last update date. Generally, this does not need an update. 
+          It is created for 10 years at a time.
+        tests:
+          - not_null
+
