@@ -1,0 +1,128 @@
+version: 2
+
+# current tables are derived from history so no tests for current
+
+models:
+  # PRODUCTS HISTORY
+  - name: dim_products_history
+    description: >
+      Product dimension, modeled as SCD Type 2. Tracks product changes over time 
+      with current and historical records.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: prod_surr_id
+        description: >
+          Product primary key. This is a surrogate key composed of the product ID, 
+          category, subcategory, and name.
+        data_type: varchar
+        tests:
+          - not_null
+
+      - name: product_id
+        description: >
+          Natural key for products. This is not unique and can be duplicated 
+          in the history table.
+        data_type: varchar
+        tests:
+          - not_null
+
+      - name: category
+        description: >
+          First level of the category hierarchy for the product.
+        data_type: varchar
+        tests:
+          - not_null
+
+      - name: sub_category
+        description: >
+          Second level of the category hierarchy for the product.
+        data_type: varchar
+        tests:
+          - not_null
+
+      - name: product_name
+        description: >
+          The name of the product in long form.
+        data_type: varchar
+        tests:
+          - not_null
+
+      - name: valid_from
+        description: >
+          The date the product record became valid.
+        data_type: timestamp
+        tests:
+          - not_null
+
+      - name: valid_to
+        description: >
+          The date the product record ceased to be valid.
+        data_type: timestamp
+        tests:
+          - not_null
+
+      - name: is_current
+        description: >
+          A flag indicating whether the record is the most recent one 
+          (1 for current, 0 for historical).
+        data_type: number
+        tests:
+          - not_null
+
+      - name: updated_at
+        description: >
+          Batch load date for the record.
+        data_type: timestamp_ntz
+        tests:
+          - not_null
+
+  # PRODUCTS CURRENT
+  - name: dim_products_current
+    description: >
+      A derived table containing the current state of all products, 
+      filtered from the history table where `is_current = 1`.
+    columns:
+      - name: prod_surr_id
+        description: >
+          Primary surrogate key for the product. This will be unique in the current table.
+        tests:
+          - unique
+          - not_null
+
+      - name: product_id
+        description: >
+          Natural key for the product. This will be unique in the current table.
+        tests:
+          - not_null
+
+      - name: category
+        description: >
+          First level of the category hierarchy for the product.
+        tests:
+          - not_null
+
+      - name: sub_category
+        description: >
+          Second level of the category hierarchy for the product.
+        tests:
+          - not_null
+
+      - name: product_name
+        description: >
+          The name of the product in long form.
+        tests:
+          - not_null
+
+      - name: valid_from
+        description: >
+          The date the product record became valid in the current table.
+        tests:
+          - not_null
+
+      - name: valid_to
+        description: >
+          The date the product record ceased to be valid in the current table.
+        tests:
+          - not_null

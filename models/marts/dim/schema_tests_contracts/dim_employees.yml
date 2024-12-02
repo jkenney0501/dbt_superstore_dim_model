@@ -1,0 +1,182 @@
+version: 2
+
+
+# current tables are derived from history so no tests for current
+models:
+  # EMPLOYEES HISTORY
+  - name: dim_employees_history
+    description: >
+      An employee history table that tracks the history of all employee actions 
+      within the company, modeled as SCD Type 2.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: emp_surr_id
+        description: Primary key for employees table. This will not be unique due to SCD Type 2.
+        data_type: varchar
+        tests:
+          - not_null
+
+      - name: emp_id
+        description: >
+          Natural key for employees table. This will not be unique due to SCD Type 2.
+        data_type: number
+        tests:
+          - not_null
+
+      - name: first_name
+        description: The employee's legal first name.
+        data_type: varchar
+        tests:
+          - not_null
+
+      - name: last_name
+        description: The employee's legal last name.
+        data_type: varchar
+        tests:
+          - not_null
+
+      - name: level
+        description: The employee's job level (e.g., VP, SVP).
+        data_type: varchar
+        tests:
+          - not_null
+
+      - name: state
+        description: The state where the employee resides.
+        data_type: varchar
+        tests:
+          - not_null
+
+      - name: age
+        description: The legal age of the employee.
+        data_type: number
+        tests:
+          - not_null
+
+      - name: hire_date
+        description: The date the employee was hired.
+        data_type: date
+        tests:
+          - not_null
+
+      - name: job_title
+        description: The employee's job title.
+        data_type: varchar
+        tests:
+          - not_null
+
+      - name: status
+        description: >
+          The employee's job status at the specified time. 
+          Possible values: 'A' (Active), 'T' (Terminated), 'L/A' (Leave of Absence).
+        data_type: varchar
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 'A'
+                - 'T'
+                - 'L/A'
+
+      - name: valid_from
+        description: The date the employee was active from in their recent position.
+        data_type: timestamp
+        tests:
+          - not_null
+
+      - name: valid_to
+        description: The date the employee was active to in their recent position.
+        data_type: timestamp
+        tests:
+          - not_null
+
+      - name: is_current
+        description: >
+          A flag indicating the most recent record (1 for current, 0 for historical).
+        data_type: number
+        tests:
+          - not_null
+
+      - name: updated_at
+        description: The batch load date.
+        data_type: timestamp_ntz
+        tests:
+          - not_null
+
+  # EMPLOYEES CURRENT
+  - name: dim_employees_current
+    description: >
+      A derived table containing the current state of all employees, 
+      filtered from the history table where `is_current = 1`.
+    columns:
+      - name: emp_surr_id
+        description: Primary key for employees. This will be unique in the current table.
+        tests:
+          - unique
+          - not_null
+
+      - name: emp_id
+        description: >
+          Natural key for employees. This will be unique in the current table.
+        tests:
+          - unique
+          - not_null
+
+      - name: first_name
+        description: The employee's legal first name.
+        tests:
+          - not_null
+
+      - name: last_name
+        description: The employee's legal last name.
+        tests:
+          - not_null
+
+      - name: level
+        description: The employee's job level (e.g., VP, SVP).
+        tests:
+          - not_null
+
+      - name: state
+        description: The state where the employee resides.
+        tests:
+          - not_null
+
+      - name: age
+        description: The legal age of the employee.
+        tests:
+          - not_null
+
+      - name: hire_date
+        description: The date the employee was hired.
+        tests:
+          - not_null
+
+      - name: job_title
+        description: The employee's job title.
+        tests:
+          - not_null
+
+      - name: status
+        description: >
+          The employee's job status at the current time. 
+          Possible values: 'A' (Active), 'T' (Terminated), 'L/A' (Leave of Absence).
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 'A'
+                - 'T'
+                - 'L/A'
+
+      - name: valid_from
+        description: The date the employee became active in their current position.
+        tests:
+          - not_null
+
+      - name: valid_to
+        description: The date the employee will cease to be active in their current position.
+        tests:
+          - not_null

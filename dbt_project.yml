@@ -39,10 +39,11 @@ models:
   superstore:
     stage:
       +materialized: view
+    int:
+      +materialized: table
     marts:
-      +materialized: view
-    dim:
-      +materialized: table
-    fct:
-      +materialized: table
+      dim:
+        +materialized: table
+      fct:
+        +materialized: table
    
