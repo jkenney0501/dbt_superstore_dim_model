@@ -29,7 +29,10 @@ The jobs set up are for a production environment using a standard deployment job
 -	Star Schema
 -	Data Visualization with Tableau (exposures may be add here-TBD)
 -	And nothing fancy happening with the SQL! Its all very basic.
--	
+
+The model that is being engineered is as follows:
+<img src="assets/Superstore ERD (1).png" width="1000">
+
 ## External Stage Set Up with Snowflake DDL
 
 AWS S3 buckets are used to store files which mimics the “Load” portion of ELT. 
