@@ -50,15 +50,63 @@ Oten you can incorporate some accepted values tests here as well. This will help
 ## Slowly Changing Dimensions
 
 The employees for Supestore are broken into a separate Dimension that is a type 2 slowly changing dimension. The method used is the timestamp method in dbt. The table is materialized in a file level configuration as a snapshot and written to a dedicated SCD schema. The customers and products table follow the same pattern as both have potential to change and the history should be captured.
+Typically, these are pulling directly from the source data but in this case, one large table was broken down into dimensions and fact so the cutomers and prodcuts were aprt of that and had to be broken down as stages first.
+The employees is a separate file and was staged as such with all going dorectly to snapshots after testing.
 
-Add sql ss and update for cust and emps
+To mimic a source change, the employee table is updated to reflect a promotion in by way of job title. This is doen in Snowflake with the following code:
+
+```sql
+-- change an employees job title to 'SPB' due to a promotion 
+update SUPERSTORE.RAW.EMPLOYEES
+set job_title = 'SPB', updated_at = current_timestamp()
+where emp_id = 2
+
+
+-- check the change
+select *
+from SUPERSTORE.RAW.EMPLOYEES
+where emp_id = 2
+
+
+-- check changes in both table, this hist table will show the flags and history
+select *
+from SUPERSTORE.DEV.DIM_EMPLOYEES_HISTORY
+where emp_id = 2
+order by updated_at desc;
+```
+
+** add screenshot with snf update statement **
+
+To further demonstrate, we change a customers name as well by mimicking a source system update with some simple CRUD:
+```sql
+-- update raw tables to mimic source system updates
+-- change a customers name where customer id = LO-17170, change to Loren Olson
+update SUPERSTORE.RAW.ORDERS
+set customer_name = 'Loren Olsen', updated_at = current_timestamp()
+where customer_id = 'LO-17170';
+
+
+-- check the change
+select *
+from SUPERSTORE.RAW.ORDERS
+where customer_id = 'LO-17170'
+
+-- see the cahnge in the dimension table
+select *
+from SUPERSTORE.DEV.DIM_CUSTOMERS_HISTORY
+where customer_id = 'LO-17170'
+order by 4 desc;
+```
+
 ** add screenshot with snf update statement **
 
 It’s notable that this data is taken early from our stage/source. We want to capture these changes early as dbt adds columns to track the date and the intermediate layer will add further transformations such as the “is_current” flag and it will also fill in the null date with a date that is extended far into the future so we can easily utilize the BETWEEN function when searching. Additionally, I add a row number function to deduplicate these records early just in case this happens. Sometimes our source data can do this and adding this step does no harm and can save you headaches later.
 
+
+
 ## Intermediate models
 
-Once we get the stages completed,
+Once we get the stages completed, we can start to implemet business logic that captures and measures the business process as defined in any requirements.
 ** add screenshots, several dim date etc **
 
 ## Dbt Tests
