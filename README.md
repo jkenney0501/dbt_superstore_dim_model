@@ -19,6 +19,7 @@ The jobs set up are for a production environment using a standard deployment job
 
 An example of the basic process flow is as follows:
 
+** add conceptual model here **
 
 
 ### Subjects utilized in this project are as follows:
@@ -34,14 +35,14 @@ An example of the basic process flow is as follows:
 -	Data Visualization with Tableau (exposures may be add here-TBD)
 -	And nothing fancy happening with the SQL! Its all very basic.
 
-<<<<<<< HEAD
+*Additonal Steps would also include capacity planning but given the inputs are psuedo, its hard to "psuedoize" the capacity plan but realistically, we would just use a mutiple on our average file size by cadence.*
+
+
 The outcome we expect is a data model found in the below entity relatonship diagram:
 
-
-=======
 The model that is being engineered is as follows:
 <img src="assets/Superstore ERD (1).png" width="1000">
->>>>>>> 3c8f862d2f4467b8875697dad5e0324af2b7b81c
+
 
 ## External Stage Set Up with Snowflake DDL
 
@@ -53,7 +54,9 @@ From here, DDL creates basic stage tables (all as string a this layer) o ingest 
 Once the data is ingested in AWS,  the stage layer is created in dbt by applying light transformations and some aliasing to the stage models. We also utilize the {{ source(‘SCHEMA ‘ , ‘SOURCE TABLE’ ) }} function here to create our dependencies as the fist step of our DAG. All the business logic will be later applied in the intermediate layer. All models here are materialized as views. We don’t really care too much about the lag a view produces because this is our lightweight reference to the source data and we are in a dev environment. 
 
 **DAG SS**
+
 **Example code to materialize views (easy import of source data.**
+
 **summary screensnip**
 
 After creating stages, we run some basic tests to make sure our sources are not null and the unique keys are in fact unique. 
