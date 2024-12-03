@@ -17,6 +17,10 @@ Finally, the final fact and dimensions are created with a new set of generic tes
 The entire process is captured in documentation below for staging and for final fact/dim.
 The jobs set up are for a production environment using a standard deployment job for daily batching and a slim CI job that runs on any pull request to automatically integrate into production.
 
+An example of the basic process flow is as follows:
+
+
+
 ### Subjects utilized in this project are as follows:
 
 -	Layered Engineering with staging, intermediate, fact and dim models.
@@ -29,7 +33,11 @@ The jobs set up are for a production environment using a standard deployment job
 -	Star Schema
 -	Data Visualization with Tableau (exposures may be add here-TBD)
 -	And nothing fancy happening with the SQL! Its all very basic.
--	
+
+The outcome we expect is a data model found in the below entity relatonship diagram:
+
+
+
 ## External Stage Set Up with Snowflake DDL
 
 AWS S3 buckets are used to store files which mimics the “Load” portion of ELT. 
