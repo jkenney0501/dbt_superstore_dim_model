@@ -40,7 +40,7 @@ models:
     stage:
       +materialized: view
     int:
-      +materialized: table
+      +materialized: view
     marts:
       dim:
         +materialized: table

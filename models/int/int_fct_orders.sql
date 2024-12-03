@@ -2,6 +2,7 @@
 
 {{ 
     config(
+        target_schema = 'inc_models',
         materialized = 'incremental', 
         unique_key = 'fct_primary_key',
         on_schema_change ='fail'
@@ -29,6 +30,7 @@ increment_fct as (
         {{ dbt_utils.generate_surrogate_key(['order_id', 'order_date', 'updated_at']) }} AS fct_primary_key,
         {{ dbt_utils.generate_surrogate_key(['customer_id', 'customer_name']) }} as cust_surr_id,
         order_id,
+        customer_id,
         YEAR(order_date) * 10000 + MONTH(order_date) * 100 + DAY(order_date) AS order_date_id,
         YEAR(ship_date) * 10000 + MONTH(ship_date) * 100 + DAY(ship_date) AS ship_date_id,
         ship_mode,
