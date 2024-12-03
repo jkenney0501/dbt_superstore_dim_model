@@ -1,17 +1,11 @@
-{{
-    config(
-        materialized='table'
-    )
-}}
-
 
 -- creates date table to ectract whatver you need for any date analysis, includes weekend day flag and holiday flag
 -- created from ephemeral model that uses date spline package to create a range of dates.
 with 
     dim_dates as(
         select 
-        date_day,
         year(date_day) * 10000 + month(date_day) * 100 + day(date_day) as date_id,
+        date_day,
         year(date_day) as yr,
         quarter(date_day) as quarter_of_yr,
         month(date_day) as mth,

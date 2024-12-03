@@ -27,3 +27,4 @@ with prod_scd as(
 
 select * 
 from prod_scd
+--where product_id = 'TEC-PH-10001795'

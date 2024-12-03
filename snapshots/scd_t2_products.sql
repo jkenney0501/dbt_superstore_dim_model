@@ -5,7 +5,7 @@
 {{
     config(
         target_schema='dev_snapshots',
-        unique_key= 'product_id',
+        unique_key= ['product_id', 'product_name'], 
         strategy='timestamp',
         updated_at='updated_at',
         invalidate_hard_deletes=True
@@ -21,7 +21,7 @@ with products_dedupe_dim as (
         product_name,
         updated_at,
         row_number() over(partition by product_id, category, sub_category, product_name order by product_id) as total_rows
-    from {{ ref('stg_orders') }}
+    from {{ ref('stg_products') }}
 )
 
 select 
@@ -30,8 +30,8 @@ select
     sub_category,
     product_name,
     updated_at,
+    total_rows
 from products_dedupe_dim
 where total_rows = 1
-
 
 {% endsnapshot %}

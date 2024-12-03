@@ -26,7 +26,7 @@ models:
         tests:
           - not_null
       - name: status
-        description: employee status can be either A - active, T- terminated or LA leavr of absence. Cannot be null.
+        description: employee status can be either A - active, T- terminated or LA leave of absence. Cannot be null.
         tests:
           - not_null
           - accepted_values:

@@ -64,7 +64,131 @@ Once we get the stages completed,
 ## Dbt Tests
 
 summary screensnip audit helper results snip
+Generic Example at the stage layer:
+```yml
+version: 2
 
+models:
+  - name: stg_employees
+    description: Employees table that show employee information, mainly for tracking purposes in reporting. Type 2 SCD
+    columns:
+      - name: emp_id
+        description: Primary key for employee table
+        tests:
+          - not_null
+          - unique
+      - name: first_name
+        description: employees first name.
+        tests:
+          - not_null
+      - name: last_name
+        description: employees last name.
+        tests:
+          - not_null
+      - name: age
+        description: employees age.
+        tests:
+          - not_null   
+      - name: hire_date
+        description: date of employee hire, cannot be null.
+        tests:
+          - not_null
+      - name: status
+        description: employee status can be either A - active, T- terminated or LA leave of absence. Cannot be null.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['A', 'T', 'L/A', 'SB']
+
+```
+
+Testing relationships at the intermediate layer:
+
+
+
+Testing positive values by creating a macro to be used in several places:
+```sql
+-- applies to all numeric cols with a count, date math or a dolar amount
+{% test positive_value(model, column_name) %}
+    with gte_zero as(
+        select  *
+        from {{ model }}
+        where {{ column_name}} <= 0
+)
+
+select * from gte_zero
+
+{% endtest %}
+```
+
+Applying the positve values in the yml file:
+```yml
+  - name: quantity
+        tests:
+          - positive_value
+      - name: sales
+        tests:
+          - positive_value
+```
+
+Unit Tests:
+- The unit test is typically used for test driven development meaning we make the test first and then development the model by incorporatng that same logic.
+- The date dimesnion has som ecomplexity to it and is a great candiate with several case statements and flags, all fields are derived from one date field whic mkaes ourinput simple.
+- The unit test is meant to capture edge cases that fall outside our assumptions.
+
+Example of the actual untit test for the dim date model (not this is conducted at the intermediate level before the dim is built):
+```yml
+unit_tests:
+  - name: test_date_dimension_logic
+    description: >
+      Validate logic in the date dimension model given it is a bit complex, holiday flags, 
+      weekend flags, are completed as custome tests given week one is actually 52 and requires customization as do flags.
+    model: int_dim_date
+    given:
+      - input: ref('stg_all_dates')
+        rows:
+          - {date_day: '2024-01-01'}
+          - {date_day: '2024-07-04'}
+          - {date_day: '2024-12-25'}
+          - {date_day: '2024-11-28'}
+          - {date_day: '2024-09-01'}
+          - {date_day: '2024-09-02'}
+          - {date_day: '2024-11-11'}
+          - {date_day: '2024-05-31'}
+          - {date_day: '2024-06-01'}
+          - {date_day: '2024-06-02'}
+          - {date_day: '2024-06-19'}
+    expect:
+      rows:
+        - {date_day: '2024-01-01', date_id: 20240101, yr: 2024, quarter_of_yr: 1, mth: 1,  day_of_wk: 1, day_name: 'monday', weekend_flag: 0, holiday_flag: 1}
+        - {date_day: '2024-07-04', date_id: 20240704, yr: 2024, quarter_of_yr: 3, mth: 7,  day_of_wk: 4, day_name: 'thursday', weekend_flag: 0, holiday_flag: 1}
+        - {date_day: '2024-12-25', date_id: 20241225, yr: 2024, quarter_of_yr: 4, mth: 12, day_of_wk: 3, day_name: 'wednesday', weekend_flag: 0, holiday_flag: 1}
+        - {date_day: '2024-11-28', date_id: 20241128, yr: 2024, quarter_of_yr: 4, mth: 11, day_of_wk: 4, day_name: 'thursday', weekend_flag: 0, holiday_flag: 1}
+        - {date_day: '2024-09-01', date_id: 20240901, yr: 2024, quarter_of_yr: 3, mth: 9,  day_of_wk: 0, day_name: 'sunday', weekend_flag: 1, holiday_flag: 1}
+        - {date_day: '2024-09-02', date_id: 20240902, yr: 2024, quarter_of_yr: 3, mth: 9,  day_of_wk: 1, day_name: 'monday', weekend_flag: 0, holiday_flag: 0}
+        - {date_day: '2024-11-11', date_id: 20241111, yr: 2024, quarter_of_yr: 4, mth: 11, day_of_wk: 1, day_name: 'monday', weekend_flag: 0, holiday_flag: 1}
+        - {date_day: '2024-05-31', date_id: 20240531, yr: 2024, quarter_of_yr: 2, mth: 5,  day_of_wk: 5, day_name: 'friday', weekend_flag: 0, holiday_flag: 1}
+        - {date_day: '2024-06-01', date_id: 20240601, yr: 2024, quarter_of_yr: 2, mth: 6,  day_of_wk: 6, day_name: 'saturday', weekend_flag: 1, holiday_flag: 0}
+        - {date_day: '2024-06-02', date_id: 20240602, yr: 2024, quarter_of_yr: 2, mth: 6,  day_of_wk: 0, day_name: 'sunday', weekend_flag: 1, holiday_flag: 0}
+        - {date_day: '2024-06-19', date_id: 20240619, yr: 2024, quarter_of_yr: 2, mth: 6,  day_of_wk: 3, day_name: 'wednesday', weekend_flag: 0, holiday_flag: 1}
+```
+
+Week is not part of this test as the the unit test was capturing January 1st 2024 as week 1 when its actually week 2 of 2023. That is certainly an edge case!
+However, this was a great candiate for a custom test with one specific task in mid.
+
+```sql
+with week_test as (
+
+    select
+        *
+    from 
+        {{ ref('int_dim_date') }}
+    where wk_of_yr != week(date_day) -- does my week match the ANSI standard week?
+
+)
+
+select * from week_test
+```
 ## dimensional models
 
 ** talk hist tables and current for scd **

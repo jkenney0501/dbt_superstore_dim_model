@@ -9,11 +9,17 @@ with finance_row_level as(
         fct.order_id,
         c.customer_id,
         c.customer_name,
+        l.country_region,
+        l.region,
+        l.state,
+        l.city,
+        l.postal_code,
         d.yr,
         d.mth,
         d.date_day as order_date,
         d.date_day as ship_date,
         d.day_name,
+        d.quarter_of_yr,
         d.weekend_flag as order_placed_on_weekend,
         d.holiday_flag as order_placed_on_holiday,
         fct.ship_mode,
@@ -42,9 +48,11 @@ with finance_row_level as(
     join 
         {{ ref('dim_date') }} as d2 
             on fct.ship_date_id = d2.date_id
-
-    join {{ ref('dim_customers_current') }} as c
+    join 
+        {{ ref('dim_customers_current') }} as c
             on fct.cust_surr_id = c.cust_surr_id
+    join 
+        {{ ref('dim_location') }} as l using(location_surr_id)
         
 )
 

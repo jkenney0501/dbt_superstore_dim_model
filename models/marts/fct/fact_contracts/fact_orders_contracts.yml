@@ -1,8 +1,9 @@
 version: 2
 
 # data contract for star schema to ensure consistent downstream data delivery
+# the relationships are tested here as well to guarantee referential integrity in dimensions to fact
 models:
-  - name: fct_orders
+  - name: fact_orders
     description: Fact table for orders.
     config:
       contract:
@@ -18,39 +19,78 @@ models:
       - name: cust_surr_id
         description: the foreign key to the customers dimension.
         data_type: varchar
+        tests:
+          - relationships:
+              field: cust_surr_id
+              to: ref('dim_customers_current')
       - name: order_id
         description: The id of the order, natural key from the system generated at POS. 
+        data_type: varchar
+      
+      - name: ship_mode
+        description: The method of shipping i.e fist class, second, etc.
         data_type: varchar
       - name: order_date_id
         description: The foriegn key to the date dimension whihc allows the id of varius date attributes from bus day to holiday to month to quarter etc.
         data_type: number
+        tests:
+          - relationships:
+              field: date_id
+              to: ref('dim_date')
       - name: ship_date_id
-        description: Foreign ky to date table.
+        description: Foreign key to date table.
         data_type: number
-      - name: ship_surr_id
-        description: Foreign ky to date table.
-        data_type: varchar
-      - name: location_id
+        tests:
+          - relationships:
+              field: date_id
+              to: ref('dim_date')
+      
+      - name: location_surr_id
         description: The location id, foriegn key to location dimension.
+        tests:
+          - relationships:
+              field: location_surr_id
+              to: ref('dim_location')
         data_type: varchar
+
+  
       - name: prod_surr_id
         description: The product identifier, foriegn key to products dimension.
         data_type: varchar
+        tests:
+          - relationships:
+              to: ref('dim_products_current')
+              field: prod_surr_id
+
+
       - name: customer_id
-        description: The customer id, foriegn key to customers dimension.
+        description: The customer id, foreign key to customers dimension.
         data_type: varchar
+        tests:
+          - relationships:
+              field: customer_id
+              to: ref('dim_customer_current')
+
       - name: emp_id
         description: The employee id - foriegn key to employees dimension.
         data_type: varchar
+        tests:
+          - relationships:
+              field: emp_id
+              to: ref('dim_employees_current')
+
       - name: sales
         description: Total dollar amount of the sale.
         data_type: number
+
       - name: quantity
         description: How many units per order were sold.
         data_type: number
+
       - name: cost_percent
         description: Cost as a percentage of the individual sale.
         data_type: number(3,2)
+
       - name: updated_at
         description: Batch load date
         data_type: timestamp_ntz
