@@ -34,14 +34,13 @@ An example of the basic process flow is as follows:
 -	Data Visualization with Tableau (exposures may be add here-TBD)
 -	And nothing fancy happening with the SQL! Its all very basic.
 
-<<<<<<< HEAD
+
 The outcome we expect is a data model found in the below entity relatonship diagram:
 
 
-=======
 The model that is being engineered is as follows:
 <img src="assets/Superstore ERD (1).png" width="1000">
->>>>>>> 3c8f862d2f4467b8875697dad5e0324af2b7b81c
+
 
 ## External Stage Set Up with Snowflake DDL
 
@@ -90,6 +89,9 @@ order by updated_at desc;
 
  <img src="assets/scd_t2_employee.png" width="1000">
 
+ The final DAG will look like this:
+<img src="assets/scd_t2_emps_dag.png" width="1000">
+
 To further demonstrate, we change a customers name as well by mimicking a source system update with some simple CRUD:
 ```sql
 -- update raw tables to mimic source system updates
@@ -112,6 +114,9 @@ order by 4 desc;
 ```
 
  <img src="assets/scd_t2_customers.png" width="1000">
+
+ The final DAG will look like this:
+<img src="assets/scd_customers_dag.png" width="1000">
 
 It’s notable that this data is taken early from our stage/source. We want to capture these changes early as dbt adds columns to track the date and the intermediate layer will add further transformations such as the “is_current” flag and it will also fill in the null date with a date that is extended far into the future so we can easily utilize the BETWEEN function when searching. Additionally, I add a row number function to deduplicate these records early just in case this happens. Sometimes our source data can do this and adding this step does no harm and can save you headaches later.
 
