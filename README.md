@@ -87,10 +87,10 @@ where emp_id = 2
 order by updated_at desc;
 ```
 
- <img src="assets/scd-t2-employee.png" width="1000">
+
 
  The final DAG will look like this:
-<img src="assets/scd_t2_emps_dag.png" width="1000">
+<img src="assets/scd-t2-emps_dag.png" width="1000">
 
 To further demonstrate, we change a customers name as well by mimicking a source system update with some simple CRUD:
 ```sql
