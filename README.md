@@ -18,7 +18,7 @@ The entire process is captured in documentation below for staging and for final 
 The jobs set up are for a production environment using a standard deployment job for daily batching and a slim CI job that runs on any pull request to automatically integrate into production.
 
 An example of the basic process flow is as follows:
-
+<img src="assets/concpetual_model.png" width="1000">
 
 
 ### Subjects utilized in this project are as follows:
@@ -58,6 +58,8 @@ Once the data is ingested in AWS,  the stage layer is created in dbt by applying
 After creating stages, we run some basic tests to make sure our sources are not null and the unique keys are in fact unique. 
 Oten you can incorporate some accepted values tests here as well. This will help you catch changes from the source early on that may affect your downstream BI. We want to catch as much as possible early on before we materialize our final model in dimensions and facts. This avoids what can be nasty backfills and a backlog of meetings that give you nothing but headaches. 
 ** add test yml  for stages**
+
+
 
 ## Slowly Changing Dimensions
 
