@@ -18,8 +18,12 @@ The entire process is captured in documentation below for staging and for final 
 The jobs set up are for a production environment using a standard deployment job for daily batching and a slim CI job that runs on any pull request to automatically integrate into production.
 
 An example of the basic process flow is as follows:
+<<<<<<< HEAD
 
 ** add conceptual model here **
+=======
+<img src="assets/concpetual_model.png" width="1000">
+>>>>>>> df9f6137859b18852df41e033716b56bd068dc7d
 
 
 ### Subjects utilized in this project are as follows:
@@ -35,11 +39,18 @@ An example of the basic process flow is as follows:
 -	Data Visualization with Tableau (exposures may be add here-TBD)
 -	And nothing fancy happening with the SQL! Its all very basic.
 
+<<<<<<< HEAD
 *Additonal Steps would also include capacity planning but given the inputs are psuedo, its hard to "psuedoize" the capacity plan but realistically, we would just use a mutiple on our average file size by cadence.*
 
 
 The outcome we expect is a data model found in the below entity relatonship diagram:
 
+=======
+
+The outcome we expect is a data model found in the below entity relatonship diagram:
+
+
+>>>>>>> df9f6137859b18852df41e033716b56bd068dc7d
 The model that is being engineered is as follows:
 <img src="assets/Superstore ERD (1).png" width="1000">
 
@@ -62,6 +73,8 @@ Once the data is ingested in AWS,  the stage layer is created in dbt by applying
 After creating stages, we run some basic tests to make sure our sources are not null and the unique keys are in fact unique. 
 Oten you can incorporate some accepted values tests here as well. This will help you catch changes from the source early on that may affect your downstream BI. We want to catch as much as possible early on before we materialize our final model in dimensions and facts. This avoids what can be nasty backfills and a backlog of meetings that give you nothing but headaches. 
 ** add test yml  for stages**
+
+
 
 ## Slowly Changing Dimensions
 
@@ -91,7 +104,10 @@ where emp_id = 2
 order by updated_at desc;
 ```
 
- <img src="assets/scd_t2_employee.png" width="1000">
+
+
+ The final DAG will look like this:
+<img src="assets/scd-t2-emps_dag.png" width="1000">
 
 To further demonstrate, we change a customers name as well by mimicking a source system update with some simple CRUD:
 ```sql
@@ -115,6 +131,9 @@ order by 4 desc;
 ```
 
  <img src="assets/scd_t2_customers.png" width="1000">
+
+ The final DAG will look like this:
+<img src="assets/scd_customers_dag.png" width="1000">
 
 It’s notable that this data is taken early from our stage/source. We want to capture these changes early as dbt adds columns to track the date and the intermediate layer will add further transformations such as the “is_current” flag and it will also fill in the null date with a date that is extended far into the future so we can easily utilize the BETWEEN function when searching. Additionally, I add a row number function to deduplicate these records early just in case this happens. Sometimes our source data can do this and adding this step does no harm and can save you headaches later.
 
