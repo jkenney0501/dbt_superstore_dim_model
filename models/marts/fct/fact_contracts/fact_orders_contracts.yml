@@ -81,7 +81,7 @@ models:
 
       - name: sales
         description: Total dollar amount of the sale.
-        data_type: number
+        data_type: number(20,2)
 
       - name: quantity
         description: How many units per order were sold.
