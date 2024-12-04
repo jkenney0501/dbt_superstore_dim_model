@@ -5,8 +5,8 @@
     config(
         target_schema = 'dev_snapshots',
         unique_key='customer_id',
-        strategy='timestamp',
-        updated_at='updated_at',
+        strategy='check',
+        check_cols = ['customer_name'],
         invalidate_hard_deletes=True
     )
 }}

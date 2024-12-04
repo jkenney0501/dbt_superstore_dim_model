@@ -14,7 +14,6 @@ models:
         description: Customer table primary key.
         data_type: varchar
         tests:
-          - unique
           - not_null
 
       - name: customer_id

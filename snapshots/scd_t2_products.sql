@@ -6,8 +6,8 @@
     config(
         target_schema='dev_snapshots',
         unique_key= ['product_id', 'product_name'], 
-        strategy='timestamp',
-        updated_at='updated_at',
+        strategy='check',
+        check_cols = ['product_id', 'category', 'sub_category', 'product_name'],
         invalidate_hard_deletes=True
     )
 }}
