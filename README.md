@@ -19,7 +19,7 @@ The jobs set up are for a production environment using a standard deployment job
 
 An example of the basic process flow is as follows:
 
-<img src="assets/superstore-concpetual.png" width="1000">
+<img src="assets/superstore-conceptual.png" width="1000">
 
 ### Subjects utilized in this project are as follows:
 
