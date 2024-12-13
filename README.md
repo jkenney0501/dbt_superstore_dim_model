@@ -19,7 +19,7 @@ The jobs set up are for a production environment using a standard deployment job
 
 An example of the basic process flow is as follows:
 
-<img src="assets/concpetual_model.png" width="1000">
+<img src="assets/supersore-concpetual.png" width="1000">
 
 ### Subjects utilized in this project are as follows:
 
@@ -42,7 +42,7 @@ The outcome we expect is a data model found in the below entity relatonship diag
 
 
 The model that is being engineered is as follows:
-<img src="assets/Superstore ERD (1).png" width="1000">
+<img src="assets/Superstore ERD (2).png" width="1000">
 
 
 ## External Stage Set Up with Snowflake DDL
