@@ -18,13 +18,8 @@ The entire process is captured in documentation below for staging and for final 
 The jobs set up are for a production environment using a standard deployment job for daily batching and a slim CI job that runs on any pull request to automatically integrate into production.
 
 An example of the basic process flow is as follows:
-<<<<<<< HEAD
 
-** add conceptual model here **
-=======
 <img src="assets/concpetual_model.png" width="1000">
->>>>>>> df9f6137859b18852df41e033716b56bd068dc7d
-
 
 ### Subjects utilized in this project are as follows:
 
@@ -39,18 +34,13 @@ An example of the basic process flow is as follows:
 -	Data Visualization with Tableau (exposures may be add here-TBD)
 -	And nothing fancy happening with the SQL! Its all very basic.
 
-<<<<<<< HEAD
 *Additonal Steps would also include capacity planning but given the inputs are psuedo, its hard to "psuedoize" the capacity plan but realistically, we would just use a mutiple on our average file size by cadence.*
 
+*******Dicuss layers and then eas into below model as finished product.******
 
 The outcome we expect is a data model found in the below entity relatonship diagram:
 
-=======
 
-The outcome we expect is a data model found in the below entity relatonship diagram:
-
-
->>>>>>> df9f6137859b18852df41e033716b56bd068dc7d
 The model that is being engineered is as follows:
 <img src="assets/Superstore ERD (1).png" width="1000">
 
@@ -67,13 +57,76 @@ Once the data is ingested in AWS,  the stage layer is created in dbt by applying
 **DAG SS**
 
 **Example code to materialize views (easy import of source data.**
+Each cource is imported into its stage. Producst amd Customers are derived from the orders file 
+with Employees being a separate uplaod similar to a file or an ELT pull from Human Resources in a company.
 
+Example of the simple code import using CTE's:
+```sql
+-- import employees file to stage layer
+with employees_stage as(
+    select 
+        *
+    from 
+        {{ source('raw', 'employees') }}
+)
+
+select 
+    cast(emp_id as int) as emp_id,
+    name as first_name,
+    surname as last_name,
+    level,
+    state,
+    cast(age as int) as age,
+    cast(hire_date as date) as hire_date,
+    job_title,
+    status,
+    updated_at
+from employees_stage
+```
+
+Once the stages are complete, type 2 slowly changing dimemsnions are sen to snapshots to capture any changes while 
+The other models become intermedoate models where we begin to apply business logic to create our consumption layer.
 **summary screensnip**
 
 After creating stages, we run some basic tests to make sure our sources are not null and the unique keys are in fact unique. 
 Oten you can incorporate some accepted values tests here as well. This will help you catch changes from the source early on that may affect your downstream BI. We want to catch as much as possible early on before we materialize our final model in dimensions and facts. This avoids what can be nasty backfills and a backlog of meetings that give you nothing but headaches. 
-** add test yml  for stages**
 
+*Each stage model gets its own test set up in a yml file, the employees is just one of several.*
+```yml
+version: 2
+
+models:
+  - name: stg_employees
+    description: Employees table that show employee information, mainly for tracking purposes in reporting. Type 2 SCD
+    columns:
+      - name: emp_id
+        description: Primary key for employee table
+        tests:
+          - not_null
+          - unique
+      - name: first_name
+        description: employees first name.
+        tests:
+          - not_null
+      - name: last_name
+        description: employees last name.
+        tests:
+          - not_null
+      - name: age
+        description: employees age.
+        tests:
+          - not_null   
+      - name: hire_date
+        description: date of employee hire, cannot be null.
+        tests:
+          - not_null
+      - name: status
+        description: employee status can be either A - active, T- terminated or LA leave of absence. Cannot be null.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['A', 'T', 'L/A', 'SB']
+```
 
 
 ## Slowly Changing Dimensions
