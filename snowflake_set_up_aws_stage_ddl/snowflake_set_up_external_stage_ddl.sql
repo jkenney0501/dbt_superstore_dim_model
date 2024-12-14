@@ -124,7 +124,10 @@ FILE_FORMAT = (
                 SKIP_HEADER=1
                 FIELD_DELIMITER=','
                 )
-                FILES = ('orders_2018.csv') -- add 2019 and beyond as needed to test incremental model
+                FILES = ('orders_2018.csv') -- load/2017/18, add 2019 and beyond as needed to test incremental model
+                 -- 'orders_2019_a.csv'
+                -- 'orders_2019_b.csv'
+                -- orders_2020.csv
                 
                 
 -- check the load
