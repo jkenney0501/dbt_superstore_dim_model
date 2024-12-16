@@ -3,12 +3,12 @@
 
 Objective: Create a new data workflow from a dara dump in AWS that refreshes M-F and create a Tableau summary dashboard to capture high level metrics associated to this data.
 
-Note: this is not meant to be a tutorial but moreso a walk through of high level items that are completed as an example of a process used for a standard dbt job. It may be a little messy right now but it'll get cleaned up!
+Note: I get asked a lot about what does a dbt developer do(mostly) and while this is not meant to be a tutorial but more so a simple walk through of high level items that are completed as an example of a process used for a standard dbt job. It may be a little messy right now but it'll get cleaned up!
 It's more of a check list of basic items I use a lot.
 
-## Overview
+## Project Overview
 
-This project mimics some modern day DataMart development and is an example of a star schema is created from the Tableau Superstore data. 
+This project mimics some modern day DataMart development that I typically do as a consultant (this is psuedo data but a similar process) and is an example of a star schema is created from the Tableau Superstore data. 
 The dataset is cleaned beforehand since this was not the point of the exercise but rather to model and transform data as we would in a DataMart as a demonstration for a standard job that a client may choose to employ. 
 
 The process itself emulates a production type ELT where a batch is loaded to Snowflake external stage and from there dbt takes over and transforms the data in three layers to create a star schema using Kimball architecture while utilizing some dbt best practices such as CI/CD pipelines, testing, using macros, documentation and modularity. 
@@ -22,7 +22,7 @@ The entire process is captured in documentation below for staging and for final 
 The jobs set up are for a production environment using a standard deployment job for daily batching and a slim CI job that runs on any pull request to automatically integrate into production.
 
 
-Base Requirements:
+**Base Requirements:**
 
 - Import source data from external stage in AWS S3 bucket.
 - Layer architecture: stage, internediate with business logic, consumption layer.
@@ -58,9 +58,10 @@ An example of the basic process flow is as follows:
 -	Data Visualization with Tableau (exposures may be add here-TBD)
 -	And nothing fancy happening with the SQL! Its all very basic.
 
-*Additonal Steps would also include capacity planning but given the inputs are psuedo, its hard to "psuedoize" the capacity plan but realistically, we would just use a mutiple on our average file size by cadence.*
+*Additonal Steps would also include capacity planning but given the inputs are psuedo, its hard to "psuedoize" the capacity plan but realistically, we would just use a mutiple on our average file size by cadence to guage our compute usage.*
 
-*******Dicuss layers and then eas into below model as finished product.******
+The goal here is ot take some data, model it using a layered architecture while applying some software engineering best practices. We are going to set up a CI/CD job from start to finsih wiht our finsih product being a consumeable star schema.
+
 
 The outcome we expect is a data model found in the below entity relatonship diagram:
 
@@ -68,6 +69,8 @@ The outcome we expect is a data model found in the below entity relatonship diag
 The star schema model that is being engineered is as follows:
 <img src="assets/Superstore ERD (2).png" width="1000">
 
+
+Lets walk through the various layers used in this project:
 
 ## External Stage Set Up with Snowflake DDL
 
@@ -811,3 +814,10 @@ https://public.tableau.com/views/superstore_17058800874340/Dashboard1?:language=
 
 
 <div class='tableauPlaceholder' id='viz1734287914112' style='position: relative'><noscript><a href='#'><img alt='Dashboard 1 ' src='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;su&#47;superstore_17058800874340&#47;Dashboard1&#47;1_rss.png' style='border: none' /></a></noscript><object class='tableauViz'  style='display:none;'><param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F' /> <param name='embed_code_version' value='3' /> <param name='site_root' value='' /><param name='name' value='superstore_17058800874340&#47;Dashboard1' /><param name='tabs' value='no' /><param name='toolbar' value='yes' /><param name='static_image' value='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;su&#47;superstore_17058800874340&#47;Dashboard1&#47;1.png' /> <param name='animate_transition' value='yes' /><param name='display_static_image' value='yes' /><param name='display_spinner' value='yes' /><param name='display_overlay' value='yes' /><param name='display_count' value='yes' /><param name='language' value='en-US' /></object></div>                
+
+
+## Conclusion
+
+While dbt is a great tool for the modern day analytic engineer, its important to note that it really is a complex tool that requires some in depth knowledge of SWE and Data Engineering practices. Without a solid base knowledge, its really hard to get the most out of it. Its designed to be user friendly BUT for experienced engineers. I have seen many (myself included) trip over our own work b/c we make things more complex thatn they need too be. Thats not to say anyone can't use it but I am saying anyone can't just pick it up an be an anlytics engineer without having alot of other SWE/DE knowledge. For example, you  have to be pretty decent at SQL to be successful with it and you have to have a good unerstanding of SWE practices to develop good testing and deployment strategies (I get many might disagree w/me about that point but I don't really care, I amd basing that on my extensive experience). Testing is a huge part of dbt and speaking yml goes a long way so there is a balance that has to be met. It takes some time to be able to be a good developer.
+
+That being said, dbt is the best tool to use IMO opinion for the modern day analytic engineer. It combines the best of both worlds of SWE/DE in one easy to docuyment placee so have fun with it and dvelop some basic projects while adding some new challenges to each one! I tried to add as much as I could in this one as an example. Hopefully it helps you!.
