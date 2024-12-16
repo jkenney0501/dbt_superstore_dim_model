@@ -75,7 +75,22 @@ From here, DDL in Snowflake will create the basic stage tables (all as string a 
 
 ## Stages Materialized (Stage Layer)
 
-Once the data is ingested in AWS,  the stage layer is created in dbt by applying light transformations and some aliasing to the stage models. We also utilize the {{ source(‘SCHEMA ‘ , ‘SOURCE TABLE’ ) }} function here to create our dependencies as the fist step of our DAG. All the business logic will be later applied in the intermediate layer. All models here are materialized as views. We don’t really care too much about the lag a view produces because this is our lightweight reference to the source data and we are in a dev environment. 
+Once the data is ingested in AWS,  the stage layer is created in dbt by applying light transformations and some aliasing to the stage models. We also utilize the {{ source(‘SCHEMA ‘ , ‘SOURCE TABLE’ ) }} function here to create our dependencies as the fist step of our DAG. All the business logic will be later applied in the intermediate layer. All models here are materialized as views. We don’t really care too much about the lag a view produces because this is our lightweight reference to the source data and we are in a dev environment. Below is how the materializations are set up in the dbt_project.yml
+
+```yml
+models:
+  superstore:
+    stg:
+      +materialized: view
+      +required_tests: {"unique.*|not_null": 1} # requires at least one og the following tests to be conducted on each model
+    int:
+      +materialized: view
+    marts:
+      dim:
+        +materialized: table
+      fct:
+        +materialized: table
+```
 
 **DAG SS**
 
