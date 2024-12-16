@@ -65,7 +65,7 @@ An example of the basic process flow is as follows:
 The outcome we expect is a data model found in the below entity relatonship diagram:
 
 
-The start schema model that is being engineered is as follows:
+The star schema model that is being engineered is as follows:
 <img src="assets/Superstore ERD (2).png" width="1000">
 
 
