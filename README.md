@@ -250,7 +250,7 @@ The employees for Supestore are broken into a separate Dimension that is a type 
 Typically, these are pulling directly from the source data but in this case, one large table was broken down into dimensions and fact so the cutomers and prodcuts were aprt of that and had to be broken down as stages first.
 The employees is a separate file and was staged as such with all going dorectly to snapshots after testing.
 
-``sql
+```sql
 -- note the scd snapshot uses a snapshot madcro and is run with by calling: dbt snapshot
 
 -- creates type 2 slowly changing dimension for customers
