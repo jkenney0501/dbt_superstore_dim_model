@@ -120,8 +120,8 @@ models:
 ```
 
 The DAG in dbt now looks alittle bit like something is happening:
+<img src="assets/stage_layer.png" width="1000">
 
-<a src='assets/stage_layer.png'></a>
 
 Once the stages are complete, type 2 slowly changing dimemsnions are sen to snapshots to capture any changes while 
 The other models become intermedoate models where we begin to apply business logic to create our consumption layer.
