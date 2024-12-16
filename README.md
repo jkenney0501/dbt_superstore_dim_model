@@ -356,13 +356,120 @@ It’s notable that this data is taken early from our stage/source. We want to c
 
 ## Intermediate models
 
-Once we get the stages completed, we can start to implement business logic that captures and measures the business process as defined in any requirements.
+Once we get the stages completed, we can start to implement business logic that captures and measures the business process as defined in any requirements. This is where we start to refine things ans model the data in a consumeable way that downstream users will access via SQL queries. Note the fact below alos utilizes incrmental logic and surogate kys whihc will be discussed later.
     - By business logic, we are creating a production level star schema fro data consumers such as analysts and other future user taht will access with SQL.
     - Some orgs my choose to use ephemeral models here but keep in ind, this can be hard to debug and really wrecks your testing.
 
-** add screenshots, several dim date etc **
+Example: addning incremental logic in an intermediate step while also creating surrogates to macth dimesions. 
+  - several things to note here:
+    - We use a strategy using the primary key for the incrment
+    - the schema change is set tp fail if there are any changes. This lets us catch changes beforer they go into prod w/o anyone knowing.
+    -  the model uses {{ this }} to reference itself by taking the max date of reference from the model (not inclusive of the current load date).
+```sql
+-- create fact: this needs to be set up as incrmental
 
-## Dbt Tests
+{{ 
+    config(
+        target_schema = 'inc_models',
+        materialized = 'incremental', 
+        unique_key = 'fct_primary_key',
+        on_schema_change ='fail'
+    ) 
+}}
+
+-- adds dupe check
+with orders_dedupe_fact as(
+    select 
+        *,
+        row_number() over(partition by order_id, order_date, ship_date, ship_mode, sales, quantity, cost_percent order by order_id) as total_rows
+    from {{ ref('stg_orders') }}
+),
+
+-- gets only unique rows from dedupe fact
+de_duped as(
+    select *
+    from orders_dedupe_fact
+    where total_rows = 1
+),
+
+-- adds increment step after deduped so it is readay for testing before prod
+increment_fct as (
+    select 
+        {{ dbt_utils.generate_surrogate_key(['order_id', 'order_date', 'updated_at']) }} AS fct_primary_key,
+        {{ dbt_utils.generate_surrogate_key(['customer_id', 'customer_name']) }} as cust_surr_id,
+        order_id,
+        customer_id,
+        YEAR(order_date) * 10000 + MONTH(order_date) * 100 + DAY(order_date) AS order_date_id,
+        YEAR(ship_date) * 10000 + MONTH(ship_date) * 100 + DAY(ship_date) AS ship_date_id,
+        ship_mode,
+        emp_id,
+        {{ dbt_utils.generate_surrogate_key(['country_region', 'state', 'city', 'postal_code', 'region']) }} as location_surr_id,
+        {{ dbt_utils.generate_surrogate_key(['product_id', 'category', 'sub_category', 'product_name']) }} as prod_surr_id,
+        sales,
+        quantity,
+        cost_percent,
+        updated_at
+    from de_duped
+
+     {% if is_incremental() %}
+
+            WHERE updated_at >= (SELECT MAX(updated_at) FROM {{ this }} )
+
+     {% endif %}
+)
+
+-- final query
+select *
+from increment_fct 
+
+```
+
+To further show how the intermedioate payer adds complexity, the date spline package was used to create a date range which is just a simple date. Uisng this, the date was broken down into its lowest form for anytype of time series anaalysis our user wants to conduct, even wekend and holicday flags. Thats complex logic and needs to be unit tested.  The process was developed using test driven developement before actually writing any SQL. See unit testing below. Here is an example of the complex sql used:
+```sql
+
+-- creates date table to exctract whatver you need for any date analysis, includes weekend day flag and holiday flag. Created from date spline package.
+with 
+    dim_dates as(
+        select 
+        year(date_day) * 10000 + month(date_day) * 100 + day(date_day) as date_id,
+        date_day,
+        year(date_day) as yr,
+        quarter(date_day) as quarter_of_yr,
+        month(date_day) as mth,
+        weekofyear(date_day) as wk_of_yr,
+        dayofweek(date_day) as day_of_wk,
+            case 
+                when cast(dayofweek(date_day) as string ) = '0' then 'sunday' 
+                when cast(dayofweek(date_day) as string ) = '1' then 'monday'
+                when cast(dayofweek(date_day) as string ) = '2' then 'tuesday'
+                when cast(dayofweek(date_day) as string ) = '3' then 'wednesday'
+                when cast(dayofweek(date_day) as string ) = '4' then 'thursday'
+                when cast(dayofweek(date_day) as string ) = '5' then 'friday'
+            else 'saturday'
+        end as day_name,
+            case when dayofweek(date_day) in (0,6) then 1 else 0 end as weekend_flag,
+            case 
+                when month(date_day) in(1) and day(date_day) in(01) then 1 
+                when month(date_day) in(1) and day(date_day) in(18) then 1
+                when month(date_day) in(5) and day(date_day) in(31) then 1
+                when month(date_day) in(6) and day(date_day) in(19) then 1
+                when month(date_day) in(7) and day(date_day) in(4) then 1
+                when month(date_day) in(9) and week(date_day) in (35) and dayofweek(date_day) in(0,1) then 1 -- labor day is always 1st monday in september, week 35
+                when month(date_day) in(11) and day(date_day) in(11) then 1 
+                when month(date_day) in(11) and week(date_day) in(48) and dayofweek(date_day) in (4) then 1 -- tg day is always last thursday of novemeberr, week 48
+                when month(date_day) in(12) and day(date_day) in(25) then 1
+                else 0
+        end as holiday_flag,
+        current_timestamp() as refreshed_at
+        from {{ ref('stg_all_dates') }}
+)
+
+select * 
+from dim_dates
+```
+
+
+## dbt Tests - Generic to Unit Testing
 
 Testing is one of the fundamental core pieces of dbt and is  software engineerning best pratice. 
     - Keep in mind, we often dont need hundresedd of tests, we juwt need really good tests at the right moments!
@@ -371,9 +478,8 @@ Testing is one of the fundamental core pieces of dbt and is  software engineerni
     - I also like ot add a unit test for any logic that is considered advanced to test my assertions and catch any potential edge cases. In this exmaple, I unit test my date dimenesion becasue it is complex and \
       I want to ensure my users are getting the required functionality for date searches.
 
-**summary screensnip audit helper results snip**
 
-Generic Example that uses unique, not_null and accepted valuesat the stage layer:
+Generic Example that uses unique, not_null and accepted values at the stage layer:
 ```yml
 version: 2
 
@@ -411,7 +517,6 @@ models:
 
 ```
 
-Testing relationships at the intermediate layer:
 
 At the intermediate layer, its gets slightly more complicared becasue I use a custom test macro. For this I use:
 
@@ -452,7 +557,7 @@ select * from gte_zero
 ```
 At the consumption layer (dim/fact), I will look to test two things, relationships (aka referential integrity) and unit test complex logic:
 
-Unit Tests:
+Unit Tests and Test Driven Development:
 - The unit test is typically used for test driven development meaning we make the test first and then development the model by incorporatng that same logic.
 - The date dimesnion has som ecomplexity to it and is a great candiate with several case statements and flags, all fields are derived from one date field whic mkaes ourinput simple.
 - The unit test is meant to capture edge cases that fall outside our assumptions.
@@ -494,8 +599,8 @@ unit_tests:
         - {date_day: '2024-06-19', date_id: 20240619, yr: 2024, quarter_of_yr: 2, mth: 6,  day_of_wk: 3, day_name: 'wednesday', weekend_flag: 0, holiday_flag: 1}
 ```
 
-Week is not part of this test as the the unit test was capturing January 1st 2024 as week 1 when its actually week 2 of 2023. That is certainly an edge case!
-However, this was a great candiate for a custom test with one specific task in mid.
+Week is not part of this test as the the unit test was capturing January 1st 2024 as week 1 when its actually week 52 of 2023. That is certainly an edge case!
+However, this was a great candidate for a custom test with one specific task in mid.
 
 ```sql
 with week_test as (
@@ -510,6 +615,9 @@ with week_test as (
 
 select * from week_test
 ```
+A quick DAG view of the unit test in action is below: if the test fails, the model does not build!
+<img src="assets/fact_oreders_row_level_w_unit_tests.png" width="1000">
+
 
 To test referential integrity, I am using a basic relationship test from dbt after incorporating surrogate keys becaseu the design of tge star schem requires a relationship from the fact to the dimesions via surrogte key that I created in dbt.
 
@@ -580,31 +688,126 @@ models:
     
 ```
 
+Overall, this project has 155 total tests. All of which have passed. Testing is crucial to building a successful project with data!.
 
-## dimensional models
-
-** talk hist tables and current for scd **
-•	surrorate keys
+<img src="assets/dbt_test_155_success.png" width="1000">
 
 ## Data Mesh
-summary screen snip
-•	model contracts
-•	groups
+
+To enforce constraints, data contracts were used at the consumption layer. These are used to ensure the LOB will have some consistency in the data served to their users. If the data type is changed, the etst will throw an error and the model will not materialize which triggers a review for the dev team. This protecst the consumption layer from incosistenices and potential errors or unknown changes that have negative downstream impqacts that no one knows is a problem unitl it becomes a majpr headache. Note: they are combined in the final yml file with the final testing.
+```yml
+version: 2
+
+# this tests the intermediate layer before it moves to the final prod layer, if it fails then no load, similar to WAP.
+
+models:
+  - name: int_fct_orders
+    description: fact table for orders
+    columns:
+      - name: fct_primary_key
+        tests:
+          - unique  
+          - not_null
+      - name: cust_surr_id
+        description: customer surrogate key that relates to customers table
+        tests:
+         - not_null
+      - name: order_id
+        description: unique aplha-numeric for the order
+        tests:
+         - not_null
+         - unique  
+      - name: order_date_id
+        description: foreign key to date dimension
+        tests:
+         - not_null
+      - name: ship_date_id
+        description: foreign key to date dimension - join twice ot get both order/ship
+        tests:
+         - not_null
+      - name: ship_mode
+        description: method of shipping used for the order
+        tests:
+         - not_null
+      - name: emp_id
+        description: primary key to employees dimension
+        tests:
+         - not_null
+      - name: location_surr_id
+        description: foreign key to location dimension 
+        tests:
+         - not_null
+      - name: prod_surr_id
+        description: foreign key to product dimension 
+        tests:
+         - not_null
+      - name: sales
+        description: sales amount of the orders
+        tests:
+         - not_null
+         - positive_value
+      - name: quantity
+        description: the number of items in the order
+        tests:
+         - not_null
+         - positive_value
+      - name: cost_percent
+        description: the percentage of the order that is attributed to the overall cost of production
+        tests:
+         - not_null
+      - name: updated_at
+        description: batch load date - will differ as batches arrive daily
+        tests:
+         - not_null
+      
+```
 
 ## Documentation
+
+Along the way for each step/layer, I document everthing by using the "description" in every yml file for every column or table. We need to be mindful of our audience. Typically, at the stage layers or intermediate layer, developers will be our auduence so we try to add wht we think can best help them. Below is an example of documentation in dbt cloud. You can get way more elaborate with overviews and descriptions but I tend to keep it simple b/c it takes time away from dev and well...., that is generally the strength for most of us.
+
+dbt docs allow us to:
+- capture tablelevel descriptions
+- capture column level descriptions
+- capture column leveltest descriptions
+- models referenced
+- code
+- DAG visuals like below
+
+Example of the finished DAG from dbt docs:
+
+<img src="assets/docs_lineage_complete.png" width="1000">
+
+Example of table level docs in dbt cloud:
+<img src="assets/docs_table_level_desc.png" width="1000">
 
 
 ## Deployment
 
-summary screen snips
+The last very important part of using dbt -  CI/CD part of your pipeline!
+
+Typically, we develop three different jobs. 
+  - continuous delivery (Slim CI job triggered on a pull request/merge after testsing passes for new changes)
+  - continous deployment (M-F at 12am)
+  - weekly full refresh (in case of missing increments)
+
+CI Example (on merge):
+<img src="assets/slim_ci_job.png" width="1000">
+
+CD Example -  M-F at 12am:
+<img src="assets/deploy_job_mon_fri.png" width="1000">
+
+Weekly Full Refresh (Sundays only)
+<img src="assets/deploy_weekly_full_refresh.png" width="1000">
+
+Succcessul Run Example: (the warnings are from an unused path that was not configured, nothing material)
+<img src="assets/run_summary_unused_resource_warning.png" width="1000">
 
 ## Tableau Dashboard
 
-This is just a placeholder while the actual dahsbaord is being developed form the data used for this project.
+This is just a placeholder while the actual dahshbaord is being developed form the data used for this project. This is a simple version whereas the actial version is developed using the model data above and will have much more detail and various grain layers to tell a deeper story.
 
 https://public.tableau.com/views/superstore_17058800874340/Dashboard1?:language=en-US&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link
 
 
-embed:
-
-<div class='tableauPlaceholder' id='viz1734287914112' style='position: relative'><noscript><a href='#'><img alt='Dashboard 1 ' src='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;su&#47;superstore_17058800874340&#47;Dashboard1&#47;1_rss.png' style='border: none' /></a></noscript><object class='tableauViz'  style='display:none;'><param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F' /> <param name='embed_code_version' value='3' /> <param name='site_root' value='' /><param name='name' value='superstore_17058800874340&#47;Dashboard1' /><param name='tabs' value='no' /><param name='toolbar' value='yes' /><param name='static_image' value='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;su&#47;superstore_17058800874340&#47;Dashboard1&#47;1.png' /> <param name='animate_transition' value='yes' /><param name='display_static_image' value='yes' /><param name='display_spinner' value='yes' /><param name='display_overlay' value='yes' /><param name='display_count' value='yes' /><param name='language' value='en-US' /></object></div>                <script type='text/javascript'>                    var divElement = document.getElementById('viz1734287914112');                    var vizElement = divElement.getElementsByTagName('object')[0];                    if ( divElement.offsetWidth > 800 ) { vizElement.style.width='1300px';vizElement.style.height='927px';} else if ( divElement.offsetWidth > 500 ) { vizElement.style.width='1300px';vizElement.style.height='927px';} else { vizElement.style.width='100%';vizElement.style.height='2477px';}                     var scriptElement = document.createElement('script');                    scriptElement.src = 'https://public.tableau.com/javascripts/api/viz_v1.js';                    vizElement.parentNode.insertBefore(scriptElement, vizElement);                </script>
+<div class='tableauPlaceholder' id='viz1734287914112' style='position: relative'><noscript><a href='#'><img alt='Dashboard 1 ' src='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;su&#47;superstore_17058800874340&#47;Dashboard1&#47;1_rss.png' style='border: none' /></a></noscript><object class='tableauViz'  style='display:none;'><param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F' /> <param name='embed_code_version' value='3' /> <param name='site_root' value='' /><param name='name' value='superstore_17058800874340&#47;Dashboard1' /><param name='tabs' value='no' /><param name='toolbar' value='yes' /><param name='static_image' value='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;su&#47;superstore_17058800874340&#47;Dashboard1&#47;1.png' /> <param name='animate_transition' value='yes' /><param name='display_static_image' value='yes' /><param name='display_spinner' value='yes' /><param name='display_overlay' value='yes' /><param name='display_count' value='yes' /><param name='language' value='en-US' /></object></div>                
