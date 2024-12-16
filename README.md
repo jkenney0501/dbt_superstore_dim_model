@@ -118,14 +118,49 @@ models:
       fct:
         +materialized: table
 ```
+Staging code in dbt is rally simple as we are just importing the ata from the raw layer with some minor transformations. I alwayssy try to get my aliases and data types set here. 
+  - One thing we dont want to do is modfy too much here, this is your foundation to reference so keep it simple so we camn easily reference the stage items.I usually will add some audit columns from snowfalke here as well.
+
+Example stage import:
+```sql
+-- import raw orders to stage
+
+with orders_stage as(
+    select 
+        *
+    from 
+        {{ source('raw', 'orders') }}
+)
+
+select 
+    cast(row_id as int) as row_id,
+    order_id,
+    cast(order_date as date) as order_date,
+    cast(ship_date as date) as ship_date,
+    ship_mode,
+    customer_id, 
+    customer_name,
+    sales_agent_id as emp_id,
+    country_region,
+    city,
+    state,
+    cast(postal_code as int) as postal_code,
+    region,
+    product_id,
+    category,
+    sub_category,
+    product_name,
+    cast( sales as decimal(20,2)) as sales,
+    cast( quantity as integer) as quantity,
+    cast( cost_percent as decimal(3,2)) as cost_percent,
+    updated_at 
+from orders_stage
+```
 
 The DAG in dbt now looks alittle bit like something is happening:
+
 <img src="assets/stage_layer.png" width="1000">
 
-
-Once the stages are complete, type 2 slowly changing dimemsnions are sen to snapshots to capture any changes while 
-The other models become intermedoate models where we begin to apply business logic to create our consumption layer.
-**summary screensnip**
 
 After creating stages, we run some basic tests to make sure our sources are not null and the unique keys are in fact unique. 
 Oten you can incorporate some accepted values tests here as well. This will help you catch changes from the source early on that may affect your downstream BI. We want to catch as much as possible early on before we materialize our final model in dimensions and facts. This avoids what can be nasty backfills and a backlog of meetings that give you nothing but headaches. 
@@ -170,10 +205,9 @@ models:
 ```
 
 
-**Example code to materialize views (easy import of source data.**
-- add screnshot of folder set up
-
 ## Building the Dimesional Model
+
+Why do we do this? This has become a standard for intuitive and functionaly performant data consumption from our downstream users. Given we do the SCD's and the join logic, the heacy lifting so to sepak is domne and the data is denormailzed so its easier to understand. Not to mention, in dimesional modeling, we are attempting to always capture a business process to measure. Our fact does just this and our dimensions add conetx to our fact. In short, this make things really easy to understand and document for our stakeholders.
 
 Orders is the main file dump where all schema are derived from except employees (b/c this has additionla HR data that would typically get dumped or be its own extract separately in most cases anyhow).
 That veing said, Employees is a separate uplaod similar to a file or an ELT pull from Human Resources in a company.
@@ -181,7 +215,7 @@ That veing said, Employees is a separate uplaod similar to a file or an ELT pull
 Therefore, we extract all dimesions later from orders except employees. First, start with what might chnage and in this case, its the type 2 SCD's so we add them to the snapshots folder.
 
 
-Example of the simple code import using CTE's:
+Example of the simple code import using CTE's (we utiaize the ref() function to create additional dependencies in our DAG): SCD's are captured early, directly from source or stage layers, these are typically a first for me to work on.
 
 ```sql
 -- import employees file from raw dump in S3 to stage layer
@@ -206,19 +240,61 @@ select
 from employees_stage
 ```
 
-Once the stages are complete, type 2 slowly changing dimemsnions are then added to the snapshots folder (so dbt can do its thing) to capture any changes while 
-The other models become intermediate models where we begin to apply business logic to create our consumption layer.
-
-**summary screensnip of type 2 for emps**
+Once the stages are complete, type 2 slowly changing dimemsnions are sent to the snapshots folder in dbt to capture any changes while 
+The other models become intermediate models where we begin to apply business logic to create our consumption layer. Th esanpshots will also go through additional logic as they are imported to intermediate as well. We want to capture and add the is_current and end_dates.
 
 
-## Slowly Changing Dimensions
+## More on Slowly Changing Dimensions
 
 The employees for Supestore are broken into a separate Dimension that is a type 2 slowly changing dimension. The method used is the timestamp method in dbt. The table is materialized in a file level configuration as a snapshot and written to a dedicated SCD schema. The customers and products table follow the same pattern as both have potential to change and the history should be captured.
 Typically, these are pulling directly from the source data but in this case, one large table was broken down into dimensions and fact so the cutomers and prodcuts were aprt of that and had to be broken down as stages first.
 The employees is a separate file and was staged as such with all going dorectly to snapshots after testing.
 
-To mimic a source change, the employee table is updated to reflect a promotion in by way of job title. This is doen in Snowflake with the following code:
+``sql
+-- note the scd snapshot uses a snapshot madcro and is run with by calling: dbt snapshot
+
+-- creates type 2 slowly changing dimension for customers
+
+{% snapshot scd_t2_employees %}
+
+
+{{
+    config(
+        target_database='superstore',
+        target_schema='dev_snapshots',
+        unique_key='emp_id',
+        strategy='timestamp',
+        updated_at='updated_at',
+        invalidate_hard_deletes=True
+    )
+}}
+
+-- create employees dim, this is an scd type 2
+with emps_dedupe_dim as(
+    select 
+        *,
+        row_number() over(partition by emp_id, first_name, last_name, level, state, age, hire_date, job_title, status order by emp_id) as total_rows
+    from {{ ref('stg_employees') }}
+)
+select 
+    emp_id,
+    first_name,
+    last_name,
+    level,
+    state,
+    age,
+    hire_date,
+    job_title,
+    status,
+    updated_at
+from emps_dedupe_dim
+where total_rows = 1
+
+{% endsnapshot %}
+
+``
+
+To mimic a source change (and to visualize it), the employee table is updated to reflect a promotion in by way of job title. This is doen in Snowflake with the following code: (Note this is the finsihed row level data.)
 
 ```sql
 -- change an employees job title to 'SPB' due to a promotion 
@@ -241,7 +317,9 @@ order by updated_at desc;
 ```
 
 
- The final DAG will look like this:
+ <img src="assets/SCD_employees.png" width="1000">
+
+The final DAG will look like this as we add a currrent and histroy table (some emps leave, some are new etc so it changes a bit):
  
 <img src="assets/scd-t2-emps_dag.png" width="1000">
 
