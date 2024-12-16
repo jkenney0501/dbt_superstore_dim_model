@@ -3,6 +3,9 @@
 
 Objective: Create a new data workflow from a dara dump in AWS that refreshes M-F and create a Tableau summary dashboard to capture high level metrics associated to this data.
 
+Note: this is not meant to be a tutorial but moreso a walk through of high level items that are completed as an example of a process used for a standard dbt job. It may be a little messy right now but it'll get cleaned up!
+It's more of a check list of basic items I use a lot.
+
 ## Overview
 
 This project mimics some modern day DataMart development and is an example of a star schema is created from the Tableau Superstore data. 
@@ -62,7 +65,7 @@ An example of the basic process flow is as follows:
 The outcome we expect is a data model found in the below entity relatonship diagram:
 
 
-The model that is being engineered is as follows:
+The start schema model that is being engineered is as follows:
 <img src="assets/Superstore ERD (2).png" width="1000">
 
 
@@ -73,9 +76,33 @@ From here, DDL in Snowflake will create the basic stage tables (all as string a 
 
 <a href='snowflake_set_up_aws_stage_ddl/snowflake_set_up_external_stage_ddl.sql'>see the snowflake ddl here</a>
 
-## Stages Materialized (Stage Layer)
+## Define Sources
 
-Once the data is ingested in AWS,  the stage layer is created in dbt by applying light transformations and some aliasing to the stage models. We also utilize the {{ source(‘SCHEMA ‘ , ‘SOURCE TABLE’ ) }} function here to create our dependencies as the fist step of our DAG. All the business logic will be later applied in the intermediate layer. All models here are materialized as views. We don’t really care too much about the lag a view produces because this is our lightweight reference to the source data and we are in a dev environment. Below is how the materializations are set up in the dbt_project.yml
+Fisrt thing we do is define our sources in a source.yml file. Thi sallow us to use the {{ source() }} function to create depemdemcies in dbt. This step is crucial to setting up a good foundation for your project.
+
+Souurces example: (On a real project, I would most likley set up a separate test file for my sources). NOte we add the source freshness needed for incremental models. Thi stests the freshness of the dat. Below it is configured to throw a warning if the data is older than 1 day. 
+```yml
+version: 2
+
+sources:
+  - name: raw
+    database: superstore  
+    schema: raw  
+    
+    tables:
+      - name: employees
+      - name: orders
+        freshness: # default freshness
+          warn_after: {count: 24, period: hour}
+        loaded_at_field: updated_at
+```
+
+Our source DAG at this point just shows orders and employees. Next our staging will expand on our layering.
+
+
+## Stages Materialized as Views
+
+Once the data is ingested in AWS and sourced in a yml file, the stage layer is created in dbt by applying light transformations and some aliasing to the stage models. We also utilize the {{ source(‘SCHEMA ‘ , ‘SOURCE TABLE’ ) }} function here to create our dependencies as the fist step of our DAG. All the business logic will be later applied in the intermediate layer. All models here are materialized as views. We don’t really care too much about the lag a view produces because this is our lightweight reference to the source data and we are in a dev environment. Below is how the materializations are set up in the dbt_project.yml
 
 ```yml
 models:
@@ -92,7 +119,9 @@ models:
         +materialized: table
 ```
 
-**DAG SS**
+The DAG in dbt now looks alittle bit like something is happening:
+
+<a href='assets/stage_layer.png'></a>
 
 Once the stages are complete, type 2 slowly changing dimemsnions are sen to snapshots to capture any changes while 
 The other models become intermedoate models where we begin to apply business logic to create our consumption layer.
