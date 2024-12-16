@@ -37,8 +37,9 @@ clean-targets:         # directories to be removed by `dbt clean`
 
 models:
   superstore:
-    stage:
+    stg:
       +materialized: view
+      +required_tests: {"unique.*|not_null": 1} # requires at least one og the following tests to be conducted on each model
     int:
       +materialized: view
     marts:
