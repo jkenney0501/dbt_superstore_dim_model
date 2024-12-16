@@ -292,7 +292,7 @@ where total_rows = 1
 
 {% endsnapshot %}
 
-``
+```
 
 To mimic a source change (and to visualize it), the employee table is updated to reflect a promotion in by way of job title. This is doen in Snowflake with the following code: (Note this is the finsihed row level data.)
 
