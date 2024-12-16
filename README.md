@@ -1,11 +1,12 @@
 
 # Superstore Dimensional Model with dbt & Snowflake
 
-Objective: Create a star schema for business to utilize various business intelligence and create a Tableau summary dashboard to capture high level metrics.
+Objective: Create a new data workflow from a dara dump in AWS that refreshes M-F and create a Tableau summary dashboard to capture high level metrics associated to this data.
 
 ## Overview
 
-This project mimics some modern day DataMart development and is an example of a star schema is created from the Tableau Superstore data. The dataset is cleaned beforehand since this was not the point of the exercise but rather to model and transform data as we would in a DataMart as a demonstration for a standard job that a client may choose to employ. 
+This project mimics some modern day DataMart development and is an example of a star schema is created from the Tableau Superstore data. 
+The dataset is cleaned beforehand since this was not the point of the exercise but rather to model and transform data as we would in a DataMart as a demonstration for a standard job that a client may choose to employ. 
 
 The process itself emulates a production type ELT where a batch is loaded to Snowflake external stage and from there dbt takes over and transforms the data in three layers to create a star schema using Kimball architecture while utilizing some dbt best practices such as CI/CD pipelines, testing, using macros, documentation and modularity. 
 
@@ -16,6 +17,26 @@ Finally, the final fact and dimensions are created with a new set of generic tes
 
 The entire process is captured in documentation below for staging and for final fact/dim.
 The jobs set up are for a production environment using a standard deployment job for daily batching and a slim CI job that runs on any pull request to automatically integrate into production.
+
+
+Base Requirements:
+
+- Import source data from external stage in AWS S3 bucket.
+- Layer architecture: stage, internediate with business logic, consumption layer.
+- Implement testing for sources from generic to custom to unit testing. 
+- Add third party package for meta testing to ensure proper schema tests at stage layer.
+- Clean an de duplicate data as needed.
+- Add type 2 slowly changng dimension to capture customer, product and employee changes for a history table and current table.
+- Add incrmental model to capture new orders that are loaded.
+- Create a dimensional model as tables for consumption layer.
+- Add surrogate keys to each dimesion and fact.
+- Create documentation for all.
+- Create a standard CI (continous integration) job fro any future changes.
+- Create standard daily schedule for CD (continuous deployment) M-F.
+- Create a full refresh job that occurs once weekly on sundays to capture any incrments that may have slipped through dev.
+- Add data contracts to enforce constraints and satsifay stakeholder requirements at consumption layer.
+- Creat high level Tableau Dashboard to cover basic KPI's.
+
 
 An example of the basic process flow is as follows:
 
@@ -47,42 +68,16 @@ The model that is being engineered is as follows:
 
 ## External Stage Set Up with Snowflake DDL
 
-AWS S3 buckets are used to store files which mimics the “Load” portion of ELT. 
-From here, DDL creates basic stage tables (all as string a this layer) o ingest the data into Snowflake. 
+AWS S3 buckets are used to store files which mimics the “Load” portion of ELT after extraction from a source system (lets presum Talend dumos this data to S3). 
+From here, DDL in Snowflake will create the basic stage tables (all as string a this layer) just to ingest the data into Snowflake. 
+
+<a href='snowflake_set_up_aws_stage_ddl/snowflake_set_up_external_stage_ddl.sql'>see the snowflake ddl here</a>
 
 ## Stages Materialized (Stage Layer)
 
 Once the data is ingested in AWS,  the stage layer is created in dbt by applying light transformations and some aliasing to the stage models. We also utilize the {{ source(‘SCHEMA ‘ , ‘SOURCE TABLE’ ) }} function here to create our dependencies as the fist step of our DAG. All the business logic will be later applied in the intermediate layer. All models here are materialized as views. We don’t really care too much about the lag a view produces because this is our lightweight reference to the source data and we are in a dev environment. 
 
 **DAG SS**
-
-**Example code to materialize views (easy import of source data.**
-Each cource is imported into its stage. Producst amd Customers are derived from the orders file 
-with Employees being a separate uplaod similar to a file or an ELT pull from Human Resources in a company.
-
-Example of the simple code import using CTE's:
-```sql
--- import employees file to stage layer
-with employees_stage as(
-    select 
-        *
-    from 
-        {{ source('raw', 'employees') }}
-)
-
-select 
-    cast(emp_id as int) as emp_id,
-    name as first_name,
-    surname as last_name,
-    level,
-    state,
-    cast(age as int) as age,
-    cast(hire_date as date) as hire_date,
-    job_title,
-    status,
-    updated_at
-from employees_stage
-```
 
 Once the stages are complete, type 2 slowly changing dimemsnions are sen to snapshots to capture any changes while 
 The other models become intermedoate models where we begin to apply business logic to create our consumption layer.
@@ -92,6 +87,8 @@ After creating stages, we run some basic tests to make sure our sources are not 
 Oten you can incorporate some accepted values tests here as well. This will help you catch changes from the source early on that may affect your downstream BI. We want to catch as much as possible early on before we materialize our final model in dimensions and facts. This avoids what can be nasty backfills and a backlog of meetings that give you nothing but headaches. 
 
 *Each stage model gets its own test set up in a yml file, the employees is just one of several.*
+
+<a href= 'models/stg'>see more testing source code here</a>
 ```yml
 version: 2
 
@@ -129,6 +126,48 @@ models:
 ```
 
 
+**Example code to materialize views (easy import of source data.**
+- add screnshot of folder set up
+
+## Building the Dimesional Model
+
+Orders is the main file dump where all schema are derived from except employees (b/c this has additionla HR data that would typically get dumped or be its own extract separately in most cases anyhow).
+That veing said, Employees is a separate uplaod similar to a file or an ELT pull from Human Resources in a company.
+
+Therefore, we extract all dimesions later from orders except employees. First, start with what might chnage and in this case, its the type 2 SCD's so we add them to the snapshots folder.
+
+
+Example of the simple code import using CTE's:
+
+```sql
+-- import employees file from raw dump in S3 to stage layer
+with employees_stage as(
+    select 
+        *
+    from 
+        {{ source('raw', 'employees') }}
+)
+-- transform what we need with some small adjustments, add all aliases here.
+select 
+    cast(emp_id as int) as emp_id,
+    name as first_name,
+    surname as last_name,
+    level,
+    state,
+    cast(age as int) as age,
+    cast(hire_date as date) as hire_date,
+    job_title,
+    status,
+    updated_at
+from employees_stage
+```
+
+Once the stages are complete, type 2 slowly changing dimemsnions are then added to the snapshots folder (so dbt can do its thing) to capture any changes while 
+The other models become intermediate models where we begin to apply business logic to create our consumption layer.
+
+**summary screensnip of type 2 for emps**
+
+
 ## Slowly Changing Dimensions
 
 The employees for Supestore are broken into a separate Dimension that is a type 2 slowly changing dimension. The method used is the timestamp method in dbt. The table is materialized in a file level configuration as a snapshot and written to a dedicated SCD schema. The customers and products table follow the same pattern as both have potential to change and the history should be captured.
@@ -158,11 +197,12 @@ order by updated_at desc;
 ```
 
 
-
  The final DAG will look like this:
+ 
 <img src="assets/scd-t2-emps_dag.png" width="1000">
 
 To further demonstrate, we change a customers name as well by mimicking a source system update with some simple CRUD:
+
 ```sql
 -- update raw tables to mimic source system updates
 -- change a customers name where customer id = LO-17170, change to Loren Olson
@@ -194,13 +234,24 @@ It’s notable that this data is taken early from our stage/source. We want to c
 
 ## Intermediate models
 
-Once we get the stages completed, we can start to implemet business logic that captures and measures the business process as defined in any requirements.
+Once we get the stages completed, we can start to implement business logic that captures and measures the business process as defined in any requirements.
+    - By business logic, we are creating a production level star schema fro data consumers such as analysts and other future user taht will access with SQL.
+    - Some orgs my choose to use ephemeral models here but keep in ind, this can be hard to debug and really wrecks your testing.
+
 ** add screenshots, several dim date etc **
 
 ## Dbt Tests
 
-summary screensnip audit helper results snip
-Generic Example at the stage layer:
+Testing is one of the fundamental core pieces of dbt and is  software engineerning best pratice. 
+    - Keep in mind, we often dont need hundresedd of tests, we juwt need really good tests at the right moments!
+    - Fundamaental tests like unique and not null a always a must and typically I use a thord party package called metatesting to ensure I have at least one of these for each model that I stage.
+    - I dind its also vital to test values that should be greater than 0 or what woud  be considered an accepted value frjm the business (such as order status).
+    - I also like ot add a unit test for any logic that is considered advanced to test my assertions and catch any potential edge cases. In this exmaple, I unit test my date dimenesion becasue it is complex and \
+      I want to ensure my users are getting the required functionality for date searches.
+
+**summary screensnip audit helper results snip**
+
+Generic Example that uses unique, not_null and accepted valuesat the stage layer:
 ```yml
 version: 2
 
@@ -240,9 +291,30 @@ models:
 
 Testing relationships at the intermediate layer:
 
+At the intermediate layer, its gets slightly more complicared becasue I use a custom test macro. For this I use:
 
+```yml
+version: 2
 
-Testing positive values by creating a macro to be used in several places:
+# this tests the intermediate layer before it moves to the final prod layer, if it fails then no load, similar to WAP.
+
+models:
+  - name: int_fct_orders
+    description: fact table for orders
+    columns:
+      - name: sales
+        description: sales amount of the orders
+        tests:
+         - not_null
+         - positive_value
+      - name: quantity
+        description: the number of items in the order
+        tests:
+         - not_null
+         - positive_value       
+```
+The above tests are derived from a custome test macro and test that the column has a value greater tahn zero. This runs as applied above to a column and is triigered by dbt build or test.
+
 ```sql
 -- applies to all numeric cols with a count, date math or a dolar amount
 {% test positive_value(model, column_name) %}
@@ -256,16 +328,7 @@ select * from gte_zero
 
 {% endtest %}
 ```
-
-Applying the positve values in the yml file:
-```yml
-  - name: quantity
-        tests:
-          - positive_value
-      - name: sales
-        tests:
-          - positive_value
-```
+At the consumption layer (dim/fact), I will look to test two things, relationships (aka referential integrity) and unit test complex logic:
 
 Unit Tests:
 - The unit test is typically used for test driven development meaning we make the test first and then development the model by incorporatng that same logic.
@@ -325,6 +388,77 @@ with week_test as (
 
 select * from week_test
 ```
+
+To test referential integrity, I am using a basic relationship test from dbt after incorporating surrogate keys becaseu the design of tge star schem requires a relationship from the fact to the dimesions via surrogte key that I created in dbt.
+
+Test relationships on fact (note contracts are added later and in the final version):
+
+```yml
+version: 2
+# this example is only a relationship tes, final version ahs contracts added
+models:
+  - name: fact_orders
+    description: Fact table for orders.
+    columns:
+      - name: fct_primary_key
+        description: Primary key for fact table.
+        data_type: varchar
+        tests:
+          - not_null 
+          - unique
+      - name: cust_surr_id
+        description: the foreign key to the customers dimension.
+        data_type: varchar
+        tests:
+          - relationships:
+              field: cust_surr_id
+              to: ref('dim_customers_current')
+      - name: order_date_id
+        description: The foriegn key to the date dimension whihc allows the id of varius date attributes from bus day to holiday to month to quarter etc.
+        data_type: number
+        tests:
+          - relationships:
+              field: date_id
+              to: ref('dim_date')
+      - name: ship_date_id
+        description: Foreign key to date table.
+        data_type: number
+        tests:
+          - relationships:
+              field: date_id
+              to: ref('dim_date')
+      - name: location_surr_id
+        description: The location id, foriegn key to location dimension.
+        tests:
+          - relationships:
+              field: location_surr_id
+              to: ref('dim_location')
+        data_type: varchar
+      - name: prod_surr_id
+        description: The product identifier, foriegn key to products dimension.
+        data_type: varchar
+        tests:
+          - relationships:
+              to: ref('dim_products_current')
+              field: prod_surr_id
+      - name: customer_id
+        description: The customer id, foreign key to customers dimension.
+        data_type: varchar
+        tests:
+          - relationships:
+              field: customer_id
+              to: ref('dim_customer_current')
+      - name: emp_id
+        description: The employee id - foriegn key to employees dimension.
+        data_type: varchar
+        tests:
+          - relationships:
+              field: emp_id
+              to: ref('dim_employees_current')
+    
+```
+
+
 ## dimensional models
 
 ** talk hist tables and current for scd **
@@ -337,11 +471,18 @@ summary screen snip
 
 ## Documentation
 
+
 ## Deployment
 
 summary screen snips
 
 ## Tableau Dashboard
-link to dash
+
+This is just a placeholder while the actual dahsbaord is being developed form the data used for this project.
+
+https://public.tableau.com/views/superstore_17058800874340/Dashboard1?:language=en-US&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link
 
 
+embed:
+
+<div class='tableauPlaceholder' id='viz1734287914112' style='position: relative'><noscript><a href='#'><img alt='Dashboard 1 ' src='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;su&#47;superstore_17058800874340&#47;Dashboard1&#47;1_rss.png' style='border: none' /></a></noscript><object class='tableauViz'  style='display:none;'><param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F' /> <param name='embed_code_version' value='3' /> <param name='site_root' value='' /><param name='name' value='superstore_17058800874340&#47;Dashboard1' /><param name='tabs' value='no' /><param name='toolbar' value='yes' /><param name='static_image' value='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;su&#47;superstore_17058800874340&#47;Dashboard1&#47;1.png' /> <param name='animate_transition' value='yes' /><param name='display_static_image' value='yes' /><param name='display_spinner' value='yes' /><param name='display_overlay' value='yes' /><param name='display_count' value='yes' /><param name='language' value='en-US' /></object></div>                <script type='text/javascript'>                    var divElement = document.getElementById('viz1734287914112');                    var vizElement = divElement.getElementsByTagName('object')[0];                    if ( divElement.offsetWidth > 800 ) { vizElement.style.width='1300px';vizElement.style.height='927px';} else if ( divElement.offsetWidth > 500 ) { vizElement.style.width='1300px';vizElement.style.height='927px';} else { vizElement.style.width='100%';vizElement.style.height='2477px';}                     var scriptElement = document.createElement('script');                    scriptElement.src = 'https://public.tableau.com/javascripts/api/viz_v1.js';                    vizElement.parentNode.insertBefore(scriptElement, vizElement);                </script>
