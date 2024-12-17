@@ -103,7 +103,7 @@ sources:
 Our source DAG at this point just shows orders and employees. Next our staging will expand on our layering.
 
 
-## Stages Materialized as Views
+## Stages and Marerializations
 
 Once the data is ingested in AWS and sourced in a yml file, the stage layer is created in dbt by applying light transformations and some aliasing to the stage models. We also utilize the {{ source(‘SCHEMA ‘ , ‘SOURCE TABLE’ ) }} function here to create our dependencies as the fist step of our DAG. All the business logic will be later applied in the intermediate layer. All models here are materialized as views. We don’t really care too much about the lag a view produces because this is our lightweight reference to the source data and we are in a dev environment. Below is how the materializations are set up in the dbt_project.yml
 
@@ -357,7 +357,7 @@ It’s notable that this data is taken early from our stage/source. We want to c
 
 
 
-## Intermediate models
+## Intermediate models - Applying Buiness Logic to Dimension and Fact Tables
 
 Once we get the stages completed, we can start to implement business logic that captures and measures the business process as defined in any requirements. This is where we start to refine things ans model the data in a consumeable way that downstream users will access via SQL queries. Note the fact below alos utilizes incrmental logic and surogate kys whihc will be discussed later.
     - By business logic, we are creating a production level star schema fro data consumers such as analysts and other future user taht will access with SQL.
@@ -369,7 +369,7 @@ Example: addning incremental logic in an intermediate step while also creating s
     - the schema change is set tp fail if there are any changes. This lets us catch changes beforer they go into prod w/o anyone knowing.
     -  the model uses {{ this }} to reference itself by taking the max date of reference from the model (not inclusive of the current load date).
 ```sql
--- create fact: this needs to be set up as incrmental
+-- create fact table: this needs to be set up as incremental
 
 {{ 
     config(
@@ -427,7 +427,7 @@ from increment_fct
 
 ```
 
-To further show how the intermedioate payer adds complexity, the date spline package was used to create a date range which is just a simple date. Uisng this, the date was broken down into its lowest form for anytype of time series anaalysis our user wants to conduct, even wekend and holicday flags. Thats complex logic and needs to be unit tested.  The process was developed using test driven developement before actually writing any SQL. See unit testing below. Here is an example of the complex sql used:
+To further show how the intermediate layer adds complexity, the date spline package was used to create a date range which is just a simple date. Uisng this, the date was broken down into its lowest form for anytype of time series anaalysis our user wants to conduct, even wekend and holicday flags. Thats complex logic and needs to be unit tested.  The process was developed using test driven developement before actually writing any SQL. See unit testing below. Here is an example of the complex sql used:
 ```sql
 
 -- creates date table to exctract whatver you need for any date analysis, includes weekend day flag and holiday flag. Created from date spline package.
@@ -474,11 +474,11 @@ from dim_dates
 
 ## dbt Tests - Generic to Unit Testing
 
-Testing is one of the fundamental core pieces of dbt and is  software engineerning best pratice. 
+Testing is one of the fundamental core pieces of dbt and is  software engineerning best pratice. Every model should incorporate at least a unique and/or not null test.
     - Keep in mind, we often dont need hundresedd of tests, we juwt need really good tests at the right moments!
     - Fundamaental tests like unique and not null a always a must and typically I use a thord party package called metatesting to ensure I have at least one of these for each model that I stage.
     - I dind its also vital to test values that should be greater than 0 or what woud  be considered an accepted value frjm the business (such as order status).
-    - I also like ot add a unit test for any logic that is considered advanced to test my assertions and catch any potential edge cases. In this exmaple, I unit test my date dimenesion becasue it is complex and \
+    - I also like to add a unit test for any logic that is considered advanced to test my assertions and catch any potential edge cases. In this exmaple, I unit test my date dimenesion becasue it is complex and \
       I want to ensure my users are getting the required functionality for date searches.
 
 
@@ -694,6 +694,10 @@ models:
 Overall, this project has 155 total tests. All of which have passed. Testing is crucial to building a successful project with data!.
 
 <img src="assets/dbt_test_155_success.png" width="1000">
+
+From here, the consunmption layer is created by importing our data from the intermediate layer where all the heavy lifting is done. Tables can be pulled to a prod database from here and doften this is a graet place to get some users feedback or UAT testing in from your downstream data consumers (I use a select few for this at this layer before pusging to prod, this allows for one last attempt at stakeholder feedback).
+
+Typically, the are materialized as tables and preficed as dim_table_name and fact_table_name to clearly call out the star schema that our downstream users can readily identofy for their analysis.
 
 ## Data Mesh
 
