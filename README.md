@@ -80,6 +80,8 @@ Lets walk through the various layers used in this project:
 
 AWS S3 buckets are used to store files which mimics the “Load” portion of ELT after extraction from a source system (lets presume Talend dumps this data to S3). 
 
+**Note:** I am not including a task and COPY command from my Snowflake set up b/c things vary so much at the phase! To get data from external or internal stage, I typically do use a task that fires a copy command to create my "raw" tables (you can alos use a pipe) but that is a deeper Snowflake concept and somehwat outside the scope of what is intended to be a high lvel dbt sample project. The base DDL for the "raw" layer is included so lets just start there and definately look into tasks, things get really fun when automated data loads using task trees.
+
 To set up an external stage in AWS:
 1. Create an external intergration object in Snowflake and also follow the steps in the DDL to do this in AWS S3
 ```SQL
