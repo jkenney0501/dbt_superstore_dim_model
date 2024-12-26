@@ -1,9 +1,9 @@
 
 # Superstore Dimensional Model with dbt & Snowflake
 
-Objective: Create a new data workflow from a dara dump in AWS that refreshes M-F and create a Tableau summary dashboard to capture high level metrics associated to this data.
+Objective: Create a new data workflow from a data dump in AWS that refreshes M-F and create a Tableau summary dashboard to capture high level metrics associated to this data.
 
-Note: I get asked a lot about what does a dbt developer do(mostly) and while this is not meant to be a tutorial but more so a simple walk through of high level items that are completed as an example of a process used for a standard dbt job. It may be a little messy right now but it'll get cleaned up!
+Note: I get asked a lot about what a dbt developer does(mostly) and while this is not meant to be a tutorial but more so a simple walk through at a high level of items that are typcially completed as an example of a process used for a standard dbt job. It may be a little messy right now but it'll get cleaned up!
 It's more of a check list of basic items I use a lot.
 
 ## Project Overview
@@ -19,7 +19,7 @@ Once staged, generic and a few singular tests are run to adhere to dbt best prac
 Finally, the final fact and dimensions are created with a new set of generic tests, unit tests, custom tests and some data governance best practices  are applied as data contracts are enforced on the final models to ensure constraints and data types don’t change without be captured and documented.
 
 The entire process is captured in documentation below for staging and for final fact/dim.
-The jobs set up are for a production environment using a standard deployment job for daily batching and a slim CI job that runs on any pull request to automatically integrate into production.
+The jobs set up are for a production environment using a standard continuous deployment job for daily batching and a slim CI job that runs on any pull request to automatically integrate into production. There is also a weekly job that runs once every Sunday even ing to do a full refresh for any data not captured incrementally through the week.
 
 
 **Base Requirements:**
@@ -38,9 +38,9 @@ The jobs set up are for a production environment using a standard deployment job
 - Create standard daily schedule for CD (continuous deployment) M-F.
 - Create a full refresh job that occurs once weekly on sundays to capture any incrments that may have slipped through dev.
 - Add data contracts to enforce constraints and satsifay stakeholder requirements at consumption layer.
-- Creat high level Tableau Dashboard to cover basic KPI's.
+- Create high level Tableau Dashboard to cover basic KPI's.
 
-**Note:** In a production style process we would have more steps like capacity planning where we nail down the volume, velocity, varity and veracity of our data. Wwe would also consider our integration startegy to understand formatting issues and naming standards. 
+**Note:** In a production style process we would have more steps like capacity planning where we nail down the volume, velocity, varity and veracity of our data. We would also consider our integration strategy to understand formatting issues and naming standards. 
 
 An example of the basic process flow is as follows:
 
@@ -62,7 +62,6 @@ An example of the basic process flow is as follows:
 *Additonal Steps would also include capacity planning but given the inputs are psuedo, its hard to "psuedoize" the capacity plan but realistically, we would just use a mutiple on our average file size by cadence to guage our compute usage.*
 
 The goal here is ot take some data, model it using a layered architecture while applying some software engineering best practices. We are going to set up a CI/CD job from start to finsih wiht our finsih product being a consumeable star schema.
-
 
 
 Lets walk through the various layers used in this project:
@@ -121,7 +120,7 @@ sources:
 Our source DAG at this point just shows orders and employees. Next our staging will expand on our layering.
 
 
-## Stages and Marerializations
+## Stages and Materializations
 
 Once the data is ingested in AWS and sourced in a yml file, the stage layer is created in dbt by applying light transformations and some aliasing to the stage models. We also utilize the {{ source(‘SCHEMA ‘ , ‘SOURCE TABLE’ ) }} function here to create our dependencies as the fist step of our DAG. All the business logic will be later applied in the intermediate layer. All models here are materialized as views. We don’t really care too much about the lag a view produces because this is our lightweight reference to the source data and we are in a dev environment. Below is how the materializations are set up in the dbt_project.yml
 
@@ -140,7 +139,7 @@ models:
         +materialized: table
 ```
 Staging code in dbt is really simple as we are just importing the data from the raw layer with some minor transformations. I always try to get my aliases and data types set here. 
-  - One thing we dont want to do is modfy too much here, this is your foundation to reference so keep it simple so we camn easily reference the stage items.I usually will add some audit columns from snowfalke here as well.
+  - One thing we dont want to do is modfy too much here, this is your foundation to reference so keep it simple so we can easily reference the stage items.I usually will add some audit columns from snowfalke here as well.
 
 Example stage import:
 ```sql
@@ -183,7 +182,7 @@ The DAG in dbt now looks alittle bit like something is happening:
 <img src="assets/stage_layer.png" width="1000">
 
 
-After creating stages (note: I usually run thezse test on my sources but whatever works for you...), we run some basic tests to make sure our sources are not null and the unique keys are in fact unique. 
+After creating stages (note: I usually run these tests on my sources but whatever works for you...), we run some basic tests to make sure our sources are not null and the unique keys are in fact unique. 
 Often you can incorporate some accepted values tests here as well. This will help you catch changes from the source early on that may affect your downstream BI. We want to catch as much as possible early on before we materialize our final model in dimensions and facts. This avoids what can be nasty backfills and a backlog of meetings that give you nothing but headaches. 
 
 *Each stage model gets its own test set up in a yml file, the employees is just one of several.*
@@ -225,7 +224,7 @@ models:
               values: ['A', 'T', 'L/A', 'SB']
 ```
 
-## Snapshots a.k/a type 2 Slowly Changing Dimensions for Change Data Capture
+## Snapshots a.k.a type 2 Slowly Changing Dimensions for Change Data Capture
 
 Why type 2 scd's? We use a type 2 as this is the default for dbt but it is also how we capture the history every time our data changes. For example, employees often change becasue they get promoted or leave via leave of abscence or attrition. 
 We capture these changes every time they occur by adding a row to see that history for when they started, when it ended and the current status. 
@@ -268,6 +267,8 @@ The method used is the timestamp method in dbt (we can also use the columns stra
 
 Typically, these are pulling directly from the source data but in this case, one large table was broken down into dimensions and fact so the cutomers and prodcuts were aprt of that and had to be broken down as stages first.
 The employees is a separate file and was staged as such with all going dorectly to snapshots after testing.
+
+**Note:** I also add a dedupe step here on snapshots. This application may have different placement or timing on other models but it always happens somewhere in the process.
 
 ```sql
 -- note the scd snapshot uses a snapshot madcro and is run with by calling: dbt snapshot
@@ -558,7 +559,7 @@ models:
 ```
 
 
-At the intermediate layer, its gets slightly more complicared becasue I use a custom test macro. For this I use:
+At the intermediate layer, its gets slightly more complicated becasue I use a custom test macro. For this I use:
 
 ```yml
 version: 2
@@ -639,7 +640,7 @@ unit_tests:
         - {date_day: '2024-06-19', date_id: 20240619, yr: 2024, quarter_of_yr: 2, mth: 6,  day_of_wk: 3, day_name: 'wednesday', weekend_flag: 0, holiday_flag: 1}
 ```
 
-Week is not part of this test as the the unit test was capturing January 1st 2024 as week 1 when its actually week 52 of 2023. That is certainly an edge case!
+Week is not part of this test as the the unit test was capturing January 1st 2024 as week 1 when its actually still part week 52 of 2023. That is certainly an edge case (revealed by the UT)!
 However, this was a great candidate for a custom test with one specific task in mid.
 
 ```sql
@@ -849,7 +850,7 @@ Succcessul Run Example: (the warnings are from an unused path that was not confi
 
 ## Tableau Dashboard
 
-This is just a placeholder while the actual dahshbaord is being developed form the data used for this project. This is a simple version whereas the actial version is developed using the model data above and will have much more detail and various grain layers to tell a deeper story.
+This is just a placeholder while the actual dahshbaord is being developed form the data used for this project. This is a simple version whereas the actial version is developed using the model data above and will have much more detail and various grain layers to tell a deeper story. This Dashboard pulls its data on a daily refresh after the dbt job(s) have run and updates on automated schedule. It uses a matrialized view to pull its complents that crrae the dash. I do this to minimixe the calcualtions Tableau has to complete to speed up its rendering.
 
 https://public.tableau.com/views/superstore_17058800874340/Dashboard1?:language=en-US&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link
 
