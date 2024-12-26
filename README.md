@@ -63,12 +63,6 @@ An example of the basic process flow is as follows:
 The goal here is ot take some data, model it using a layered architecture while applying some software engineering best practices. We are going to set up a CI/CD job from start to finsih wiht our finsih product being a consumeable star schema.
 
 
-The outcome we expect is a data model found in the below entity relatonship diagram:
-
-
-The star schema model that is being engineered is as follows:
-<img src="assets/Superstore ERD (2).png" width="1000">
-
 
 Lets walk through the various layers used in this project:
 
@@ -208,9 +202,7 @@ models:
 ```
 
 
-## Building the Dimesional Model
-
-Why do we do this? This has become a standard for intuitive and functionaly performant data consumption from our downstream users. Given we do the SCD's and the join logic, the heacy lifting so to sepak is domne and the data is denormailzed so its easier to understand. Not to mention, in dimesional modeling, we are attempting to always capture a business process to measure. Our fact does just this and our dimensions add conetx to our fact. In short, this make things really easy to understand and document for our stakeholders.
+******************** WTF GOES HERE ****************
 
 Orders is the main file dump where all schema are derived from except employees (b/c this has additionla HR data that would typically get dumped or be its own extract separately in most cases anyhow).
 That veing said, Employees is a separate uplaod similar to a file or an ELT pull from Human Resources in a company.
@@ -247,9 +239,13 @@ Once the stages are complete, type 2 slowly changing dimemsnions are sent to the
 The other models become intermediate models where we begin to apply business logic to create our consumption layer. Th esanpshots will also go through additional logic as they are imported to intermediate as well. We want to capture and add the is_current and end_dates.
 
 
-## More on Slowly Changing Dimensions
+## Snapshots a.k/a type 2 Slowly Changing Dimensions
 
-The employees for Supestore are broken into a separate Dimension that is a type 2 slowly changing dimension. The method used is the timestamp method in dbt. The table is materialized in a file level configuration as a snapshot and written to a dedicated SCD schema. The customers and products table follow the same pattern as both have potential to change and the history should be captured.
+Why type 2 scd's? We use a type 2 as this is the default for dbt but it is also how we capture the history every time our data changes. For example, employees often change becasue thye get promoted or leave via leave of abscence or attrition. 
+We capture these changes every time they occur by adding a row to see that history for when they started, when it ended and the current status. 
+
+The employees for Supestore are broken into a separate Dimension that is a type 2 slowly changing dimension. The method used is the timestamp method in dbt (we can also use the columns strategy and provide a list of columns that may change if there is no timestamp colum.). The table is materialized in a file level configuration as a snapshot and written to a dedicated SCD schema. The customers and products table follow the same pattern as both have potential to change and the history should be captured.
+
 Typically, these are pulling directly from the source data but in this case, one large table was broken down into dimensions and fact so the cutomers and prodcuts were aprt of that and had to be broken down as stages first.
 The employees is a separate file and was staged as such with all going dorectly to snapshots after testing.
 
@@ -471,6 +467,15 @@ select *
 from dim_dates
 ```
 
+## Building the Dimesional Model in our Consumption Layer
+
+Why do we do this? This has become a standard for intuitive and functionaly performant data consumption from our downstream users. Given we do the SCD's and the join logic, the heacy lifting so to sepak is domne and the data is denormailzed so its easier to understand. Not to mention, in dimesional modeling, we are attempting to always capture a business process to measure. Our fact does just this and our dimensions add conetx to our fact. In short, this make things really easy to understand and document for our stakeholders.
+
+
+The outcome we expect is a data model found in the below entity relatonship diagram:
+
+The star schema model that is being engineered is as follows:
+<img src="assets/Superstore ERD (2).png" width="1000">
 
 ## dbt Tests - Generic to Unit Testing
 
