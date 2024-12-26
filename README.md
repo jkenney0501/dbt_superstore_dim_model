@@ -63,6 +63,16 @@ An example of the basic process flow is as follows:
 
 The goal here is to take some data, model it using a layered architecture while applying some software engineering best practices. We are going to set up a CI/CD job from start to finish with our finished product being a consumable star schema.
 
+Why I incorporate layered architecture:
+- Primarily b/c it is a best practice that allows us to separate concerns, use modularity and improve our maintainabilty of our code by allowing for independent deloping, testing and modification of each layer. This makes for easier scaling and adaptibility to changing requirements that minimizes impacts on other parts of the system. 
+
+**Key benefits of using layered architecture:**
+- Separation of Concerns: Each layer focuses on a specific aspect of the application, preventing code mixing and simplifying logic management. 
+- Improved Maintainability: Changes within a layer can be made without significantly affecting other layers, making maintenance easier. 
+- Scalability: Individual layers can be scaled independently based on their specific load requirements. 
+- Testability: Each layer can be tested individually, simplifying the testing process. 
+- Reusability: Components within a layer can often be reused across different projects. 
+- Team Collaboration: Different development teams can work on separate layers with minimal dependencies. 
 
 Lets walk through the various layers used in this project:
 
