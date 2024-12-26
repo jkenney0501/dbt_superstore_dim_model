@@ -40,6 +40,7 @@ The jobs set up are for a production environment using a standard deployment job
 - Add data contracts to enforce constraints and satsifay stakeholder requirements at consumption layer.
 - Creat high level Tableau Dashboard to cover basic KPI's.
 
+**Note:** In a production style process we would have more steps like capacity planning where we nail down the volume, velocity, varity and veracity of our data. Wwe would also consider our integration startegy to understand formatting issues and naming standards. 
 
 An example of the basic process flow is as follows:
 
@@ -68,10 +69,33 @@ Lets walk through the various layers used in this project:
 
 ## External Stage Set Up with Snowflake DDL
 
-AWS S3 buckets are used to store files which mimics the “Load” portion of ELT after extraction from a source system (lets presum Talend dumos this data to S3). 
-From here, DDL in Snowflake will create the basic stage tables (all as string a this layer) just to ingest the data into Snowflake. 
+AWS S3 buckets are used to store files which mimics the “Load” portion of ELT after extraction from a source system (lets presume Talend dumps this data to S3). 
 
-<a href='snowflake_set_up_aws_stage_ddl/snowflake_set_up_external_stage_ddl.sql'>see the snowflake ddl here</a>
+To set up an external stage in AWS:
+1. Create an external intergration object in Snowflake and also follow the steps in the DDL to do this in AWS S3
+```SQL
+CREATE OR REPLACE SCHEMA EXTERNAL_STGS;
+
+
+CREATE STORAGE INTEGRATION s3_int
+ type = external_stage
+ storage_provider = 'S3'
+ enabled = true
+ storage_aws_role_arn = '<your arn from access role in aws >' -- remove this
+ storage_allowed_locations = ('s3://superstore-data-dbt/load/' )
+ ;
+
+
+CREATE STAGE SUPERSTORE.EXTERNAL_STGS.s3_dbt_stage
+ storage_integration = s3_int
+ url = 's3:/your s3 buckett/load/'
+ ;
+
+-- now create the tables, A file format object and use copy into and tasks to automate as needed. .....
+```
+From here, DDL in Snowflake will create the basic stage tables (all as string a this layer) just to ingest the data into Snowflake. 
+<a href='snowflake_set_up_aws_stage_ddl/snowflake_set_up_external_stage_ddl.sql'>See the snowflake ddl here</a>
+
 
 ## Define Sources
 
@@ -115,7 +139,7 @@ models:
       fct:
         +materialized: table
 ```
-Staging code in dbt is rally simple as we are just importing the ata from the raw layer with some minor transformations. I alwayssy try to get my aliases and data types set here. 
+Staging code in dbt is really simple as we are just importing the data from the raw layer with some minor transformations. I always try to get my aliases and data types set here. 
   - One thing we dont want to do is modfy too much here, this is your foundation to reference so keep it simple so we camn easily reference the stage items.I usually will add some audit columns from snowfalke here as well.
 
 Example stage import:
@@ -159,8 +183,8 @@ The DAG in dbt now looks alittle bit like something is happening:
 <img src="assets/stage_layer.png" width="1000">
 
 
-After creating stages, we run some basic tests to make sure our sources are not null and the unique keys are in fact unique. 
-Oten you can incorporate some accepted values tests here as well. This will help you catch changes from the source early on that may affect your downstream BI. We want to catch as much as possible early on before we materialize our final model in dimensions and facts. This avoids what can be nasty backfills and a backlog of meetings that give you nothing but headaches. 
+After creating stages (note: I usually run thezse test on my sources but whatever works for you...), we run some basic tests to make sure our sources are not null and the unique keys are in fact unique. 
+Often you can incorporate some accepted values tests here as well. This will help you catch changes from the source early on that may affect your downstream BI. We want to catch as much as possible early on before we materialize our final model in dimensions and facts. This avoids what can be nasty backfills and a backlog of meetings that give you nothing but headaches. 
 
 *Each stage model gets its own test set up in a yml file, the employees is just one of several.*
 
@@ -201,16 +225,18 @@ models:
               values: ['A', 'T', 'L/A', 'SB']
 ```
 
+## Snapshots a.k/a type 2 Slowly Changing Dimensions for Change Data Capture
 
-******************** WTF GOES HERE ****************
+Why type 2 scd's? We use a type 2 as this is the default for dbt but it is also how we capture the history every time our data changes. For example, employees often change becasue they get promoted or leave via leave of abscence or attrition. 
+We capture these changes every time they occur by adding a row to see that history for when they started, when it ended and the current status. 
 
 Orders is the main file dump where all schema are derived from except employees (b/c this has additionla HR data that would typically get dumped or be its own extract separately in most cases anyhow).
-That veing said, Employees is a separate uplaod similar to a file or an ELT pull from Human Resources in a company.
+That being said, Employees is a separate upload similar to a file or an ELT pull from Human Resources in a company.
 
 Therefore, we extract all dimesions later from orders except employees. First, start with what might chnage and in this case, its the type 2 SCD's so we add them to the snapshots folder.
 
 
-Example of the simple code import using CTE's (we utiaize the ref() function to create additional dependencies in our DAG): SCD's are captured early, directly from source or stage layers, these are typically a first for me to work on.
+Example of the simple code import using CTE's (we utiaize the ref() function to create additional dependencies in our DAG): SCD's are captured early, directly from source or stage layers, these are typically a first for me to work on. A best practice is to do this early in the process as we will add dome minor transformation at the intermediate layer before it is referenced at the consumption layer.
 
 ```sql
 -- import employees file from raw dump in S3 to stage layer
@@ -238,13 +264,7 @@ from employees_stage
 Once the stages are complete, type 2 slowly changing dimemsnions are sent to the snapshots folder in dbt to capture any changes while 
 The other models become intermediate models where we begin to apply business logic to create our consumption layer. Th esanpshots will also go through additional logic as they are imported to intermediate as well. We want to capture and add the is_current and end_dates.
 
-
-## Snapshots a.k/a type 2 Slowly Changing Dimensions
-
-Why type 2 scd's? We use a type 2 as this is the default for dbt but it is also how we capture the history every time our data changes. For example, employees often change becasue thye get promoted or leave via leave of abscence or attrition. 
-We capture these changes every time they occur by adding a row to see that history for when they started, when it ended and the current status. 
-
-The employees for Supestore are broken into a separate Dimension that is a type 2 slowly changing dimension. The method used is the timestamp method in dbt (we can also use the columns strategy and provide a list of columns that may change if there is no timestamp colum.). The table is materialized in a file level configuration as a snapshot and written to a dedicated SCD schema. The customers and products table follow the same pattern as both have potential to change and the history should be captured.
+The method used is the timestamp method in dbt (we can also use the columns strategy and provide a list of columns that may change if there is no timestamp colum.). The table is materialized in a file level configuration as a snapshot and written to a dedicated SCD schema. The customers and products table follow the same pattern as both have potential to change and the history should be captured.
 
 Typically, these are pulling directly from the source data but in this case, one large table was broken down into dimensions and fact so the cutomers and prodcuts were aprt of that and had to be broken down as stages first.
 The employees is a separate file and was staged as such with all going dorectly to snapshots after testing.
@@ -291,6 +311,11 @@ where total_rows = 1
 
 {% endsnapshot %}
 
+```
+To run in dev use:
+Outside of this, dbt build will take care of the everything when you run it.
+```sql
+dbt snapshot
 ```
 
 To mimic a source change (and to visualize it), the employee table is updated to reflect a promotion in by way of job title. This is doen in Snowflake with the following code: (Note this is the finsihed row level data.)
@@ -355,15 +380,18 @@ It’s notable that this data is taken early from our stage/source. We want to c
 
 ## Intermediate models - Applying Buiness Logic to Dimension and Fact Tables
 
-Once we get the stages completed, we can start to implement business logic that captures and measures the business process as defined in any requirements. This is where we start to refine things ans model the data in a consumeable way that downstream users will access via SQL queries. Note the fact below alos utilizes incrmental logic and surogate kys whihc will be discussed later.
+Once we get the stages completed, we can start to implement business logic that captures and measures the business process as defined in any requirements. This is where we start to refine things and model the data in a consumable way that downstream users will access via SQL queries. Note the fact below alos utilizes incrmental logic and surogate kys whihc will be discussed later.
     - By business logic, we are creating a production level star schema fro data consumers such as analysts and other future user taht will access with SQL.
     - Some orgs my choose to use ephemeral models here but keep in ind, this can be hard to debug and really wrecks your testing.
 
-Example: addning incremental logic in an intermediate step while also creating surrogates to macth dimesions. 
+Example: adding incremental logic in an intermediate step while also creating surrogates to macth dimesions. 
   - several things to note here:
     - We use a strategy using the primary key for the incrment
     - the schema change is set tp fail if there are any changes. This lets us catch changes beforer they go into prod w/o anyone knowing.
     -  the model uses {{ this }} to reference itself by taking the max date of reference from the model (not inclusive of the current load date).
+    -  
+I typically focus on what would be my fact table and apply the incrm,emtal strategy and tes it... alot! You don't want backfills every week.
+   - For this I usually hvae the ERD laid out already, its below and would be done alreadya as it is typically a pahse that occurs just after the conceptual/iteration/capacity planning. Wwe raent hitting every step here b/c its just a simple demo that mimics some of my standard process.
 ```sql
 -- create fact table: this needs to be set up as incremental
 
@@ -423,7 +451,10 @@ from increment_fct
 
 ```
 
-To further show how the intermediate layer adds complexity, the date spline package was used to create a date range which is just a simple date. Uisng this, the date was broken down into its lowest form for anytype of time series anaalysis our user wants to conduct, even wekend and holicday flags. Thats complex logic and needs to be unit tested.  The process was developed using test driven developement before actually writing any SQL. See unit testing below. Here is an example of the complex sql used:
+### Add dimesions for additional comtext
+- the dims add comtext to our facts so its important we implement this as we progress through our layered architecture.
+  
+To further show how the intermediate layer adds complexity, the date spline package was used to create a date range which is just a simple date. Uisng this, the date was broken down into its lowest form for anytype of time series analysis our user wants to conduct, even wekend and holicday flags. Thats complex logic and needs to be unit tested.  The process was developed using test driven developement before actually writing any SQL. See unit testing below. Here is an example of the complex sql used:
 ```sql
 
 -- creates date table to exctract whatver you need for any date analysis, includes weekend day flag and holiday flag. Created from date spline package.
@@ -471,6 +502,7 @@ from dim_dates
 
 Why do we do this? This has become a standard for intuitive and functionaly performant data consumption from our downstream users. Given we do the SCD's and the join logic, the heacy lifting so to sepak is domne and the data is denormailzed so its easier to understand. Not to mention, in dimesional modeling, we are attempting to always capture a business process to measure. Our fact does just this and our dimensions add conetx to our fact. In short, this make things really easy to understand and document for our stakeholders.
 
+Additionally, we add contracts to this layer to ensure and enforce constrainst/data types for consistency. Documentation is also a key factor here so we can define everything for our downstream users. The theme here is to really understand our data consumers (though this not entirtely possible, we do our best) and keep it simple. The more complexity you add, the hard thingsd get to fix laster for someome else that  may not understaqnd your logic at all. 
 
 The outcome we expect is a data model found in the below entity relatonship diagram:
 
@@ -827,6 +859,4 @@ https://public.tableau.com/views/superstore_17058800874340/Dashboard1?:language=
 
 ## Conclusion
 
-While dbt is a great tool for the modern day analytic engineer, its important to note that it really is a complex tool that requires some in depth knowledge of SWE and Data Engineering practices. Without a solid base knowledge, its really hard to get the most out of it. Its designed to be user friendly BUT for experienced engineers. I have seen many (myself included) trip over our own work b/c we make things more complex thatn they need too be. Thats not to say anyone can't use it but I am saying anyone can't just pick it up an be an anlytics engineer without having alot of other SWE/DE knowledge. For example, you  have to be pretty decent at SQL to be successful with it and you have to have a good unerstanding of SWE practices to develop good testing and deployment strategies (I get many might disagree w/me about that point but I don't really care, I amd basing that on my extensive experience). Testing is a huge part of dbt and speaking yml goes a long way so there is a balance that has to be met. It takes some time to be able to be a good developer.
-
-That being said, dbt is the best tool to use IMO opinion for the modern day analytic engineer. It combines the best of both worlds of SWE/DE in one easy to docuyment placee so have fun with it and dvelop some basic projects while adding some new challenges to each one! I tried to add as much as I could in this one as an example. Hopefully it helps you!.
+While dbt is a great tool for the modern day analytic engineer, its important to note that it really is a complex tool that requires some in depth knowledge of SWE and Data Engineering practices. The best practices of Data Engineering have to be applied otherwise we can trip ourselves up easily. That being said, dbt is a phenommmenal tool for DE's to quickly model, troubleshoot apply tests, customize and maintain pipelines. Having a process in place for your base disuassions with stakeholders, conceptual modeling, documentation will help trememdously in my opinion. Most of all, learning is stress free so vist some dbt courses and get to it!
