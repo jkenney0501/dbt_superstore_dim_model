@@ -750,6 +750,30 @@ models:
               to: ref('dim_employees_current')
     
 ```
+Last but certainly not least, thord party tests area  favorit of mine! I use (seen below) the thiord party package named "dbt_meta_testing" which ensures I have add the proper schema tests ALL of my stages. I typically make sure everythng gets at least one unique of not_null test. This can be a hassle later on if you miss it and this package makes sure you do not. To read more about it visit <a href='https://hub.getdbt.com/tnightengale/dbt_meta_testing/latest/'>here.</a> You can also visit the dbt package hub for a variety of test packahes and read about what each one does. <a href='https://hub.getdbt.com/'>visit dbt package hub./a>
+
+Here is the package yml:
+```yml
+packages:
+  - package: dbt-labs/dbt_utils
+    version: 1.3.0
+  - package: calogica/dbt_expectations
+    version: 0.10.4
+  - package: tnightengale/dbt_meta_testing
+    version: 0.3.6
+  - package: dbt-labs/audit_helper
+    version: 0.12.1
+```
+
+Here is the actual utilization in the schema layer of the dbt project ymml:
+```yml
+models:
+  superstore:
+    stg:
+      +materialized: view
+      +required_tests: {"unique.*|not_null": 1} # requires at least one of the following tests to be conducted on each model
+ 
+```
 
 Overall, this project has 155 total tests. All of which have passed. Testing is crucial to building a successful project with data!.
 
