@@ -3,7 +3,7 @@
 
 **Objective: Create a new data workflow from a data dump in AWS that refreshes M-F and create a Tableau summary dashboard to capture high-level metrics associated with this data.**
 
-**Note:** I get asked a lot about what a dbt developer does (mostly), and while this is not meant to be a tutorial but more so a simple walk-through at a high level of items that are typically completed as an example of a process used for a standard dbt job. It may be a little messy right now, but it’ll get cleaned up!
+**Note:** I get asked a lot about what a dbt developer does (mostly), and while this is not meant to be a tutorial but more so a simple walk-through at a high level of items that I typically utilize as an example of a process used for a standard dbt job. It may be a little messy right now, but it’ll get cleaned up! The order of things is mostly standard except for testing which I mention below. It is meant to be read before anything else.
 It’s more of a checklist of basic items I use a lot.
 
 ## Project Overview
@@ -40,7 +40,7 @@ The jobs set up are for a production environment using a standard continuous dep
 - Add data contracts to enforce constraints and satisfy stakeholder requirements at consumption layer.
 - Create high-level Tableau Dashboard to cover basic KPI's.
   
-**Note:** In a production-style process, we would have more steps like capacity planning where we nail down the volume, velocity, variety, and veracity of our data. We would also consider our integration strategy to understand formatting issues and naming standards.
+**Note:**  *In a production-style process, we would have more steps like capacity planning where we nail down the volume, velocity, variety, and veracity of our data. We would also consider our integration strategy to understand formatting issues and naming standards.*
 
 An example of the basic process flow is as follows:
 
@@ -64,7 +64,8 @@ An example of the basic process flow is as follows:
 The goal here is to take some data, model it using a layered architecture while applying some software engineering best practices. We are going to set up a CI/CD job from start to finish with our finished product being a consumable star schema.
 
 Why I incorporate layered architecture:
-- Primarily b/c it is a best practice that allows us to separate concerns, use modularity and improve our maintainabilty of our code by allowing for independent deloping, testing and modification of each layer. This makes for easier scaling and adaptibility to changing requirements that minimizes impacts on other parts of the system. 
+
+- Primarily b/c it is a best practice that allows us to separate concerns, use modularity and improve our maintainabilty of our code by allowing for independent developing, testing and modification of each layer. This makes for easier scaling and adaptibility to changing requirements that minimizes impacts on other parts of the system. 
 
 **Key benefits of using layered architecture:**
 - Separation of Concerns: Each layer focuses on a specific aspect of the application, preventing code mixing and simplifying logic management. 
@@ -468,8 +469,8 @@ from increment_fct
 
 ```
 
-### Add dimesions for additional context
-- the dims add comtext to our facts so its important we implement this as we progress through our layered architecture.
+### Add dimensions for additional context
+- The dims add comtext to our facts so its important we implement this as we progress through our layered architecture.
   
 To further show how the intermediate layer adds complexity, the date spline package was used to create a date range which is just a simple date. Uisng this, the date was broken down into its lowest form for anytype of time series analysis our user wants to conduct, even wekend and holicday flags. Thats complex logic and needs to be unit tested.  The process was developed using test driven developement before actually writing any SQL. See unit testing below. Here is an example of the complex sql used:
 ```sql
@@ -517,7 +518,7 @@ from dim_dates
 
 ## Building the Dimensional Model in our Consumption Layer
 
-Why do we do this? This has become a standard for intuitive and functionaly performant data consumption from our downstream users. Given we do the SCD's and the join logic, the heacy lifting so to sepak is domne and the data is denormailzed so its easier to understand. Not to mention, in dimesional modeling, we are attempting to always capture a business process to measure. Our fact does just this and our dimensions add conetx to our fact. In short, this make things really easy to understand and document for our stakeholders.
+Why do we do this? This (a star schema) has become a standard for intuitive and functionaly performant data consumption from our downstream users. Given we do the SCD's and the join logic, the heacy lifting so to sepak is domne and the data is denormalized so its easier to understand. Not to mention, in dimensional modeling, we are attempting to always capture a business process to measure. Our fact does just this and our dimensions add contex to our fact. In short, this make things really easy to understand and document for our stakeholders/downstream data consumers. It also lessens the burden of utilizing a lot of joins for one ad hoc report or standard business intellifence on a normal cadence.
 
 Additionally, we add contracts to this layer to ensure and enforce constrainst/data types for consistency. Documentation is also a key factor here so we can define everything for our downstream users. The theme here is to really understand our data consumers (though this not entirtely possible, we do our best) and keep it simple. The more complexity you add, the hard thingsd get to fix laster for someome else that  may not understaqnd your logic at all. 
 
@@ -535,7 +536,9 @@ Testing is one of the fundamental core pieces of dbt and is  software engineerni
     - I also like to add a unit test for any logic that is considered advanced to test my assertions and catch any potential edge cases. In this exmaple, I unit test my date dimenesion becasue it is complex and \
       I want to ensure my users are getting the required functionality for date searches.
 
-I generally stick to the them below for testing with some minor variations:
+I generally stick to the theme below for testing with some minor variations:
+
+**Note:** I run tests early and often. This visual and section may appear here but this is just to demonstrate and cluister the examples under this topic. This is applied throughout the project at the varopis layers as demonstrated in the visual or in the yml files.
 <img src="assets/dbt-tests.png" width="1000">
 source: https://docs.getdbt.com/blog/test-smarter-where-tests-should-go
 
@@ -879,4 +882,14 @@ https://public.tableau.com/views/superstore_17058800874340/Dashboard1?:language=
 
 ## Conclusion
 
-While dbt is a great tool for the modern-day analytic engineer, it’s important to note that it really is a complex tool that requires some in-depth knowledge of SWE and Data Engineering practices. The best practices of Data Engineering have to be applied; otherwise, we can trip ourselves up easily. That being said, dbt is a phenomenal tool for DE's to quickly model, troubleshoot, apply tests, customize, and maintain pipelines. Having a process in place for your base discussions with stakeholders, conceptual modeling, and documentation will help tremendously in my opinion. Most of all, learning is stress-free, so visit some dbt courses and get to it!
+Throughout this example, the basics of dbt are covered and about 85% of the time, you will use all of these concpets in practice when using dbt to model data.
+
+To recap topics covered:
+1. external stages/raw layers/sources
+2. layers of architecture
+3. testing - generic, unit, custom and third party
+4. documentation
+5. deployment for CI/CD pipeline orchestration
+
+I also use some surogate keys but font elaborate on them much as thta is a Kimbal Modeling technique that you can read up on. I would highly recommend trying some dbt courses out in the cloud version. Its really fun and there is a ton to learn!
+Visit dbt's learn center <a href='https://learn.getdbt.com/catalog'>here.</a> And mostly, just have fun doing it. It takes a while to really learn and be able to implement the fundamental principles professionally. dbt really mixes the best of software engineering and data engineering into one fun tool!
