@@ -535,6 +535,9 @@ Testing is one of the fundamental core pieces of dbt and is  software engineerni
     - I also like to add a unit test for any logic that is considered advanced to test my assertions and catch any potential edge cases. In this exmaple, I unit test my date dimenesion becasue it is complex and \
       I want to ensure my users are getting the required functionality for date searches.
 
+I generally stick to the them below for testing with some minor variations:
+<img src="assets/dbt-tests.png" width="1000">
+source: https://docs.getdbt.com/blog/test-smarter-where-tests-should-go
 
 Generic Example that uses unique, not_null and accepted values at the stage layer:
 ```yml
