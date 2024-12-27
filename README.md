@@ -750,7 +750,7 @@ models:
               to: ref('dim_employees_current')
     
 ```
-Last but certainly not least, thord party tests area  favorit of mine! I use (seen below) the thiord party package named "dbt_meta_testing" which ensures I have add the proper schema tests ALL of my stages. I typically make sure everythng gets at least one unique of not_null test. This can be a hassle later on if you miss it and this package makes sure you do not. To read more about it visit <a href='https://hub.getdbt.com/tnightengale/dbt_meta_testing/latest/'>here.</a> You can also visit the dbt package hub for a variety of test packahes and read about what each one does. <a href='https://hub.getdbt.com/'>visit dbt package hub./a>
+Last but certainly not least, thord party tests area  favorit of mine! I use (seen below) the thiord party package named "dbt_meta_testing" which ensures I have add the proper schema tests ALL of my stages. I typically make sure everythng gets at least one unique of not_null test. This can be a hassle later on if you miss it and this package makes sure you do not. To read more about it visit <a href='https://hub.getdbt.com/tnightengale/dbt_meta_testing/latest/'>here.</a> You can also visit the dbt package hub for a variety of test packahes and read about what each one does. <a href='https://hub.getdbt.com/'>visit dbt package hub.</a>
 
 Here is the package yml:
 ```yml
