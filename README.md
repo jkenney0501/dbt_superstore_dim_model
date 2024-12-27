@@ -876,13 +876,14 @@ This is just a placeholder while the actual dashboard is being developed from th
 
 https://public.tableau.com/views/superstore_17058800874340/Dashboard1?:language=en-US&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link
 
+Why a dashboard? The purpose of modeling data is to capture a process our stakeholders want to measure. A dashboard lets us do this and add visuals to tell the story of the data with a little more help from various charts and interactivity. The pipeline itself is a way for us to modify and transform raw data that makes it insightful and actionabke in a dashboard. Dashboard design in itself is an art but we, as analytics engineers should have a basic graspp of how to tell the story and derive key performance indicatprs from the data.
 
 <div class='tableauPlaceholder' id='viz1734287914112' style='position: relative'><noscript><a href='#'><img alt='Dashboard 1 ' src='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;su&#47;superstore_17058800874340&#47;Dashboard1&#47;1_rss.png' style='border: none' /></a></noscript><object class='tableauViz'  style='display:none;'><param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F' /> <param name='embed_code_version' value='3' /> <param name='site_root' value='' /><param name='name' value='superstore_17058800874340&#47;Dashboard1' /><param name='tabs' value='no' /><param name='toolbar' value='yes' /><param name='static_image' value='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;su&#47;superstore_17058800874340&#47;Dashboard1&#47;1.png' /> <param name='animate_transition' value='yes' /><param name='display_static_image' value='yes' /><param name='display_spinner' value='yes' /><param name='display_overlay' value='yes' /><param name='display_count' value='yes' /><param name='language' value='en-US' /></object></div>                
 
 
 ## Conclusion
 
-Throughout this example, the basics of dbt are covered and about 85% of the time, you will use all of these concpets in practice when using dbt to model data.
+Throughout this example, the basics of dbt are covered and about 85% of the time, you will use all of these concepts in practice when using dbt to model data.
 
 To recap topics covered:
 1. external stages/raw layers/sources
@@ -890,6 +891,7 @@ To recap topics covered:
 3. testing - generic, unit, custom and third party
 4. documentation
 5. deployment for CI/CD pipeline orchestration
+6. quick dashboard example of our end product for stakeholders
 
 I also use some surogate keys but font elaborate on them much as thta is a Kimbal Modeling technique that you can read up on. I would highly recommend trying some dbt courses out in the cloud version. Its really fun and there is a ton to learn!
 Visit dbt's learn center <a href='https://learn.getdbt.com/catalog'>here.</a> And mostly, just have fun doing it. It takes a while to really learn and be able to implement the fundamental principles professionally. dbt really mixes the best of software engineering and data engineering into one fun tool!
