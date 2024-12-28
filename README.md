@@ -954,5 +954,5 @@ To recap topics covered:
 5. deployment for CI/CD pipeline orchestration
 6. quick dashboard example of our end product for stakeholders
 
-I also use some surogate keys but font elaborate on them much as thta is a Kimbal Modeling technique that you can read up on. I would highly recommend trying some dbt courses out in the cloud version. Its really fun and there is a ton to learn!
+I also use some surrogate keys but I dont elaborate on them much as that is a Kimbal Modeling technique that you can read up on (its great for optimizing as well). I would highly recommend trying some dbt courses out in the cloud version. Its really fun and there is a ton to learn!
 Visit dbt's learn center <a href='https://learn.getdbt.com/catalog'>here.</a> And mostly, just have fun doing it. It takes a while to really learn and be able to implement the fundamental principles professionally. dbt really mixes the best of software engineering and data engineering into one fun tool!
