@@ -40,7 +40,7 @@ The jobs set up are for a production environment using a standard continuous dep
 - Add data contracts to enforce constraints and satisfy stakeholder requirements at consumption layer.
 - Create high-level Tableau Dashboard to cover basic KPI's.
   
-**Note:**  *In a production-style process, we would have more steps like capacity planning where we nail down the volume, velocity, variety, and veracity of our data. We would also consider our integration strategy to understand formatting issues and naming standards.*
+**Note:**  *In a production-style process, we would have more steps like capacity planning where we nail down the volume, velocity, variety, and veracity of our data but given the inputs are pseudo, it’s hard to "pseudoize" the capacity plan, but realistically, we would just use a multiple on our average file size by cadence to gauge our compute usage. Adding to that in a variety of ways would be cps analysis in Snowflake but that is beyond the scope of this example. We would also consider our integration strategy to understand formatting issues and naming standards.*
 
 An example of the basic process flow is as follows:
 
@@ -59,7 +59,6 @@ An example of the basic process flow is as follows:
 -	Data Visualization with Tableau (exposures may be add here-TBD)
 -	And nothing fancy happening with the SQL! Its all very basic.
 
-*Additional Steps would also include capacity planning but given the inputs are pseudo, it’s hard to "pseudoize" the capacity plan, but realistically, we would just use a multiple on our average file size by cadence to gauge our compute usage.*
 
 The goal here is to take some data, model it using a layered architecture while applying some software engineering best practices. We are going to set up a CI/CD job from start to finish with our finished product being a consumable star schema.
 
@@ -111,7 +110,7 @@ From here, DDL in Snowflake will create the basic stage tables (all as string a 
 
 ## Define Sources
 
-Fisrt thing we do is define our sources in a source.yml file. This allows us to use the ```sql{{ source() }}``` function to create dependencies in dbt. This step is crucial to setting up a good foundation for your project.
+Fisrt thing we do is define our sources in a source.yml file. This allows us to use the ``` {{ source('schema', 'table name) }}``` function to create dependencies in dbt. This step is crucial to setting up a good foundation for your project.
 
 Sources example: (On a real project, I would most likely set up a separate test file for my sources). 
 
@@ -137,7 +136,7 @@ Our source DAG at this point just shows orders and employees. Next our staging w
 
 ## Stages and Materializations
 
-Once the data is ingested in AWS and sourced in a yml file, the stage layer is created in dbt by applying light transformations and some aliasing to the stage models. We also utilize the ```sql {{ source(‘SCHEMA ‘ , ‘SOURCE TABLE’ ) }}``` function here to create our dependencies as the fist step of our DAG. All the business logic will be later applied in the intermediate layer. All models here are materialized as views. We don’t really care too much about the lag a view produces because this is our lightweight reference to the source data and we are in a dev environment. 
+Once the data is ingested in AWS and sourced in a yml file, the stage layer is created in dbt by applying light transformations and some aliasing to the stage models. We also utilize the ``` {{ source('schema', 'table name ) }}``` function here to create our dependencies as the fist step of our DAG. All the business logic will be later applied in the intermediate layer. All models here are materialized as views. We don’t really care too much about the lag a view produces because this is our lightweight reference to the source data and we are in a dev environment. 
 
 Below is how the materializations are set up in the dbt_project.yml
 
