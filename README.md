@@ -110,7 +110,7 @@ From here, DDL in Snowflake will create the basic stage tables (all as string a 
 
 ## Define Sources
 
-Fisrt thing we do is define our sources in a source.yml file. This allows us to use the ``` {{ source('schema', 'table name) }}``` function to create dependencies in dbt. This step is crucial to setting up a good foundation for your project.
+Fisrt thing we do is define our sources in a source.yml file. This allows us to use the ``` {{ source('schema', 'table name') }}``` function to create dependencies in dbt. This step is crucial to setting up a good foundation for your project.
 
 Sources example: (On a real project, I would most likely set up a separate test file for my sources). 
 
@@ -138,7 +138,7 @@ Our source DAG at this point just shows orders and employees. Next our staging w
 
 Once the data is ingested in AWS and sourced in a yml file, the stage layer is created in dbt by applying light transformations and some aliasing to the stage models. We also utilize the ``` {{ source('schema', 'table name ) }}``` function here to create our dependencies as the fist step of our DAG. All the business logic will be later applied in the intermediate layer. All models here are materialized as views. We don’t really care too much about the lag a view produces because this is our lightweight reference to the source data and we are in a dev environment. 
 
-Below is how the materializations are set up in the dbt_project.yml
+Below is how the materializations are set up in the dbt_project.yml. I materialze as views until the consumption layer becaseu I am working in dev so the lag is common. I also like to materialze at the schema level to keep things consistent, it kind of lends itself to the "separation of concerns" for layered architecture.
 
 ```yml
 models:
@@ -153,6 +153,8 @@ models:
         +materialized: table
       fct:
         +materialized: table
+      finance:
+      +materialized: view
 ```
 Staging code in dbt is really simple as we are just importing the data from the raw layer with some minor transformations. I always try to get my aliases and data types set here. 
   - One thing we dont want to do is modify too much here, this is your foundation to reference so keep it simple so we can easily reference the stage items.I usually will add some audit columns from Snowflake here as well.
@@ -468,8 +470,9 @@ from increment_fct
 
 ```
 
-### Add dimensions for additional context
-- The dims add comtext to our facts so its important we implement this as we progress through our layered architecture.
+### Add dimensions for additional context to our Fact Table
+- The dims add context to our facts so its important we implement this as we progress through our layered architecture.
+- Note that this is an aggregated fact and typically you would see a transactional fact with line items where you would aggregate by order_id but demo data does not often go this deep so it is what it is.
   
 To further show how the intermediate layer adds complexity, the date spline package was used to create a date range which is just a simple date. Uisng this, the date was broken down into its lowest form for anytype of time series analysis our user wants to conduct, even wekend and holicday flags. Thats complex logic and needs to be unit tested.  The process was developed using test driven developement before actually writing any SQL. See unit testing below. Here is an example of the complex sql used:
 ```sql
@@ -515,9 +518,11 @@ select *
 from dim_dates
 ```
 
-## Building the Dimensional Model in our Consumption Layer
+## Building the Dimensional Model/Star Schema in our Consumption Layer
 
-Why do we do this? This (a star schema) has become a standard for intuitive and functionaly performant data consumption from our downstream users. Given we do the SCD's and the join logic, the heacy lifting so to sepak is domne and the data is denormalized so its easier to understand. Not to mention, in dimensional modeling, we are attempting to always capture a business process to measure. Our fact does just this and our dimensions add contex to our fact. In short, this make things really easy to understand and document for our stakeholders/downstream data consumers. It also lessens the burden of utilizing a lot of joins for one ad hoc report or standard business intellifence on a normal cadence.
+Why do we do this? This (a star schema) has become a standard for intuitive and functionaly performant data consumption from our downstream users. Given we do the SCD's and the join logic, the heacy lifting so to sepak is domne and the data is denormalized so its easier to understand. Not to mention, in dimensional modeling, we are attempting to always capture a business process to measure. Our fact does just this and our dimensions add contex to our fact. In short, this make things really easy to understand and document for our stakeholders/downstream data consumers. It also lessens the burden of utilizing a lot of joins for one ad hoc report or standard business intellifence on a normal cadence. You'll note that I use a histroy and current table. Thi sis manily b/c our current employees should only contain those with the status of 'A' where host contains the entire history of the employee, active or not. That same is applied for all SCD's. We use the hist where is_current = 1 to join to the fact.
+
+Another important caveat: I use surrogate keys that are hash based keys. These are generally more efficient for joins (our downstream users will join the dims/fact) given they reference a hash map. There is a bit of optimization happening with that design.
 
 Additionally, we add contracts to this layer to ensure and enforce constrainst/data types for consistency. Documentation is also a key factor here so we can define everything for our downstream users. The theme here is to really understand our data consumers (though this not entirtely possible, we do our best) and keep it simple. The more complexity you add, the hard thingsd get to fix laster for someome else that  may not understaqnd your logic at all. 
 
