@@ -534,15 +534,15 @@ The star schema model that is being engineered is as follows:
 ## dbt Tests - Generic to Unit Testing
 
 Testing is one of the fundamental core pieces of dbt and is  software engineerning best practice. Every model should incorporate at least a unique and/or not null test.
-    - Keep in mind, we often dont need hundresedd of tests, we juwt need really good tests at the right moments!
-    - Fundamaental tests like unique and not null a always a must and typically I use a thord party package called metatesting to ensure I have at least one of these for each model that I stage.
-    - I dind its also vital to test values that should be greater than 0 or what woud  be considered an accepted value frjm the business (such as order status).
+    - Keep in mind, we often dont need hundreds of tests, we just need really good tests at the right moment/places!
+    - Fundamaental tests like unique and not null a always a must and typically I use a third party package called metatesting to ensure I have at least one of these for each model that I stage.
+    - I find its also vital to test values that should be greater than 0 or what woud  be considered an accepted value from the business (such as order status).
     - I also like to add a unit test for any logic that is considered advanced to test my assertions and catch any potential edge cases. In this exmaple, I unit test my date dimenesion becasue it is complex and \
       I want to ensure my users are getting the required functionality for date searches.
 
 I generally stick to the theme below for testing with some minor variations:
 
-**Note:** I run tests early and often. This visual and section may appear here but this is just to demonstrate and cluister the examples under this topic. This is applied throughout the project at the varopis layers as demonstrated in the visual or in the yml files.
+**Note:** I run tests early and often. This visual and section may appear here but this is just to demonstrate and cluster the examples under this topic. This is applied throughout the project at the various layers as demonstrated in the visual or in the yml files. Below is a really good reference to follow for dbt projects.
 <img src="assets/dbt-tests.png" width="1000">
 source: https://docs.getdbt.com/blog/test-smarter-where-tests-should-go
 
@@ -711,7 +711,7 @@ models:
               field: cust_surr_id
               to: ref('dim_customers_current')
       - name: order_date_id
-        description: The foriegn key to the date dimension whihc allows the id of varius date attributes from bus day to holiday to month to quarter etc.
+        description: The foreign key to the date dimension which allows the id of various date attributes from bus day to holiday to month to quarter etc.
         data_type: number
         tests:
           - relationships:
@@ -754,7 +754,7 @@ models:
               to: ref('dim_employees_current')
     
 ```
-Last but certainly not least, thord party tests area  favorit of mine! I use (seen below) the thiord party package named "dbt_meta_testing" which ensures I have add the proper schema tests ALL of my stages. I typically make sure everythng gets at least one unique of not_null test. This can be a hassle later on if you miss it and this package makes sure you do not. To read more about it visit <a href='https://hub.getdbt.com/tnightengale/dbt_meta_testing/latest/'>here.</a> You can also visit the dbt package hub for a variety of test packahes and read about what each one does. <a href='https://hub.getdbt.com/'>visit dbt package hub.</a>
+Last but certainly not least, third party tests area  favorit of mine! I use (seen below) the thiord party package named "dbt_meta_testing" which ensures I have add the proper schema tests ALL of my stages. I typically make sure everything gets at least one unique or not_null test. This can be a hassle later on if you miss it and this package makes sure you do not. To read more about it visit <a href='https://hub.getdbt.com/tnightengale/dbt_meta_testing/latest/'>here.</a> You can also visit the dbt package hub for a variety of test packahes and read about what each one does. <a href='https://hub.getdbt.com/'>visit dbt package hub.</a>
 
 Here is the package yml:
 ```yml
