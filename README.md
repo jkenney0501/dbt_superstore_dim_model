@@ -687,7 +687,7 @@ Test relationships on fact (note contracts are added later and in the final vers
 
 ```yml
 version: 2
-# this example is only a relationship tes, final version ahs contracts added
+# this example is only a relationship test, final version as contracts added
 models:
   - name: fact_orders
     description: Fact table for orders.
@@ -784,72 +784,105 @@ Typically, the are materialized as tables and preficed as dim_table_name and fac
 
 ## Data Mesh
 
-To enforce constraints, data contracts were used at the consumption layer. These are used to ensure the LOB will have some consistency in the data served to their users. If the data type is changed, the test will throw an error and the model will not materialize which triggers a review for the dev team. This protecst the consumption layer from incosistenices and potential errors or unknown changes that have negative downstream impqacts that no one knows is a problem unitl it becomes a majpr headache. Note: they are combined in the final yml file with the final testing.
+To enforce constraints, data contracts were used at the consumption layer. These are used to ensure the LOB will have some consistency in the data served to their users. If the data type is changed, the test will throw an error and the model will not materialize which triggers a review for the dev team. This protecst the consumption layer from incosistenices and potential errors or unknown changes that have negative downstream impqacts that no one knows is a problem unitl it becomes a major headache. Note: they are combined in the final yml file with the final testing. Note: we can also version our contracts whihc is great for downstream testing as to not break things but I have not done that here.
+
 ```yml
 version: 2
 
-# this tests the intermediate layer before it moves to the final prod layer, if it fails then no load, similar to WAP.
-
+# data contract for star schema to ensure consistent downstream data delivery
+# the relationships are tested here as well to guarantee referential integrity in dimensions to fact
 models:
-  - name: int_fct_orders
-    description: fact table for orders
+  - name: fact_orders
+    description: Fact table for orders.
+    config:
+      contract:
+        enforced: true
+
     columns:
       - name: fct_primary_key
+        description: Primary key for fact table.
+        data_type: varchar
         tests:
-          - unique  
-          - not_null
+          - not_null 
+          - unique
       - name: cust_surr_id
-        description: customer surrogate key that relates to customers table
+        description: the foreign key to the customers dimension.
+        data_type: varchar
         tests:
-         - not_null
+          - relationships:
+              field: cust_surr_id
+              to: ref('dim_customers_current')
       - name: order_id
-        description: unique aplha-numeric for the order
-        tests:
-         - not_null
-         - unique  
-      - name: order_date_id
-        description: foreign key to date dimension
-        tests:
-         - not_null
-      - name: ship_date_id
-        description: foreign key to date dimension - join twice ot get both order/ship
-        tests:
-         - not_null
-      - name: ship_mode
-        description: method of shipping used for the order
-        tests:
-         - not_null
-      - name: emp_id
-        description: primary key to employees dimension
-        tests:
-         - not_null
-      - name: location_surr_id
-        description: foreign key to location dimension 
-        tests:
-         - not_null
-      - name: prod_surr_id
-        description: foreign key to product dimension 
-        tests:
-         - not_null
-      - name: sales
-        description: sales amount of the orders
-        tests:
-         - not_null
-         - positive_value
-      - name: quantity
-        description: the number of items in the order
-        tests:
-         - not_null
-         - positive_value
-      - name: cost_percent
-        description: the percentage of the order that is attributed to the overall cost of production
-        tests:
-         - not_null
-      - name: updated_at
-        description: batch load date - will differ as batches arrive daily
-        tests:
-         - not_null
+        description: The id of the order, natural key from the system generated at POS. 
+        data_type: varchar
       
+      - name: ship_mode
+        description: The method of shipping i.e fist class, second, etc.
+        data_type: varchar
+      - name: order_date_id
+        description: The foriegn key to the date dimension whihc allows the id of varius date attributes from bus day to holiday to month to quarter etc.
+        data_type: number
+        tests:
+          - relationships:
+              field: date_id
+              to: ref('dim_date')
+      - name: ship_date_id
+        description: Foreign key to date table.
+        data_type: number
+        tests:
+          - relationships:
+              field: date_id
+              to: ref('dim_date')
+      
+      - name: location_surr_id
+        description: The location id, foriegn key to location dimension.
+        tests:
+          - relationships:
+              field: location_surr_id
+              to: ref('dim_location')
+        data_type: varchar
+
+  
+      - name: prod_surr_id
+        description: The product identifier, foriegn key to products dimension.
+        data_type: varchar
+        tests:
+          - relationships:
+              to: ref('dim_products_current')
+              field: prod_surr_id
+
+
+      - name: customer_id
+        description: The customer id, foreign key to customers dimension.
+        data_type: varchar
+        tests:
+          - relationships:
+              field: customer_id
+              to: ref('dim_customer_current')
+
+      - name: emp_id
+        description: The employee id - foriegn key to employees dimension.
+        data_type: varchar
+        tests:
+          - relationships:
+              field: emp_id
+              to: ref('dim_employees_current')
+
+      - name: sales
+        description: Total dollar amount of the sale.
+        data_type: number(20,2)
+
+      - name: quantity
+        description: How many units per order were sold.
+        data_type: number
+
+      - name: cost_percent
+        description: Cost as a percentage of the individual sale.
+        data_type: number(3,2)
+
+      - name: updated_at
+        description: Batch load date
+        data_type: timestamp_ntz
 ```
 
 ## Documentation
