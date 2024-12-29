@@ -517,6 +517,7 @@ with
 select * 
 from dim_dates
 ```
+<a href='https://docs.getdbt.com/docs/build/unit-tests'>Read more on unit testing at dbt</a>
 
 ## Building the Dimensional Model/Star Schema in our Consumption Layer
 
