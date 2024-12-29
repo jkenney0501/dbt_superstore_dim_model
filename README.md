@@ -517,7 +517,7 @@ with
 select * 
 from dim_dates
 ```
-<a href='https://docs.getdbt.com/docs/build/unit-tests'>Read more on unit testing at dbt</a>
+
 
 ## Building the Dimensional Model/Star Schema in our Consumption Layer
 
@@ -666,6 +666,7 @@ unit_tests:
         - {date_day: '2024-06-02', date_id: 20240602, yr: 2024, quarter_of_yr: 2, mth: 6,  day_of_wk: 0, day_name: 'sunday', weekend_flag: 1, holiday_flag: 0}
         - {date_day: '2024-06-19', date_id: 20240619, yr: 2024, quarter_of_yr: 2, mth: 6,  day_of_wk: 3, day_name: 'wednesday', weekend_flag: 0, holiday_flag: 1}
 ```
+<a href='https://docs.getdbt.com/docs/build/unit-tests'>Read more on unit testing at dbt</a>
 
 Week is not part of this test as the the unit test was capturing January 1st 2024 as week 1 when its actually still part week 52 of 2023. That is certainly an edge case (revealed by the UT)!
 However, this was a great candidate for a custom test with one specific task in mid.
