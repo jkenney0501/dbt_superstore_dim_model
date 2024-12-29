@@ -72,7 +72,9 @@ Why I incorporate layered architecture:
 - Scalability: Individual layers can be scaled independently based on their specific load requirements. 
 - Testability: Each layer can be tested individually, simplifying the testing process. 
 - Reusability: Components within a layer can often be reused across different projects. 
-- Team Collaboration: Different development teams can work on separate layers with minimal dependencies. 
+- Team Collaboration: Different development teams can work on separate layers with minimal dependencies.
+
+<a href = 'https://medium.com/@satyendra.jaiswal/understanding-layered-architecture-a-comprehensive-guide-4c2eee374d18'>Read more on layered architecture</a>
 
 Lets walk through the various layers used in this project:
 
@@ -794,6 +796,10 @@ What is datamesh? For our purposes, we are using data contractas which are trypi
 
 To enforce constraints, data contracts were used at the consumption layer. These are used to ensure the LOB will have some consistency in the data served to their users. If the data type is changed, the test will throw an error and the model will not materialize which triggers a review for the dev team. This protecst the consumption layer from incosistenices and potential errors or unknown changes that have negative downstream impqacts that no one knows is a problem unitl it becomes a major headache. Note: they are combined in the final yml file with the final testing. Note: we can also version our contracts whihc is great for downstream testing as to not break things but I have not done that here.
 
+<a href='https://www.getdbt.com/blog/what-is-data-mesh'>Read more about DataMesh here.</a>
+
+<a href='https://docs.getdbt.com/docs/collaborate/govern/model-versions'>Read more about model versioning with dbt.</a>
+
 ```yml
 version: 2
 
@@ -912,6 +918,7 @@ Example of the finished DAG from dbt docs:
 Example of table level docs in dbt cloud:
 <img src="assets/docs_table_level_desc.png" width="1000">
 
+<a href='https://docs.getdbt.com/docs/build/documentation'>Read more about Documentation in dbt</a>
 
 ## Deployment
 
@@ -933,6 +940,8 @@ Weekly Full Refresh (Sundays only)
 
 Succcessul Run Example: (the warnings are from an unused path that was not configured, nothing material)
 <img src="assets/run_summary_unused_resource_warning.png" width="1000">
+
+<a href='https://docs.getdbt.com/docs/deploy/deployments'>Read more about deployment and jobs in dbt</a>
 
 ## Tableau Dashboard (hosted on Tableau Public)
 
