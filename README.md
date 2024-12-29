@@ -789,7 +789,8 @@ From here, the consumption layer is created by importing our data from the inter
 
 Typically, the are materialized as tables and preficed as dim_table_name and fact_table_name to clearly call out the star schema that our downstream users can readily identofy for their analysis.
 
-## Data Mesh
+## Data Mesh/Contracts
+What is datamesh? For our purposes, we are using data contractas which are trypically domain specifc and most relevant to the business. Datamesh iscommonly used for treating data as a product, allowing teams within an organization to own and access the data most relevant to their needs while maintaining overall governance through a self-serve platform and federated computational governance; essentially, it distributes data ownership across different business units instead of centralizing it in a single location, promoting agility and scalability in data analysis or simply put, it guarantees data is delivered in a sepcific way. Thta way is described below....
 
 To enforce constraints, data contracts were used at the consumption layer. These are used to ensure the LOB will have some consistency in the data served to their users. If the data type is changed, the test will throw an error and the model will not materialize which triggers a review for the dev team. This protecst the consumption layer from incosistenices and potential errors or unknown changes that have negative downstream impqacts that no one knows is a problem unitl it becomes a major headache. Note: they are combined in the final yml file with the final testing. Note: we can also version our contracts whihc is great for downstream testing as to not break things but I have not done that here.
 
