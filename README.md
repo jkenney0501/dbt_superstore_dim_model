@@ -74,7 +74,7 @@ Why I incorporate layered architecture:
 - Reusability: Components within a layer can often be reused across different projects. 
 - Team Collaboration: Different development teams can work on separate layers with minimal dependencies.
 
-<a href = 'https://medium.com/@satyendra.jaiswal/understanding-layered-architecture-a-comprehensive-guide-4c2eee374d18'>Read more on layered architecture</a>
+<a href = 'https://medium.com/@satyendra.jaiswal/understanding-layered-architecture-a-comprehensive-guide-4c2eee374d18' target="_blank">Read more on layered architecture</a>
 
 Lets walk through the various layers used in this project:
 
@@ -107,7 +107,7 @@ CREATE STAGE SUPERSTORE.EXTERNAL_STGS.s3_dbt_stage
 -- now create the tables, A file format object and use copy into and tasks to automate as needed. .....
 ```
 From here, DDL in Snowflake will create the basic stage tables (all as string a this layer) just to ingest the data into Snowflake. 
-<a href='snowflake_set_up_aws_stage_ddl/snowflake_set_up_external_stage_ddl.sql'>See the snowflake ddl here</a>
+<a href='snowflake_set_up_aws_stage_ddl/snowflake_set_up_external_stage_ddl.sql' target="_blank">See the snowflake ddl here</a>
 
 
 ## Define Sources
@@ -207,7 +207,7 @@ Often you can incorporate some accepted values tests here as well. This will hel
 
 *Each stage model gets its own test set up in a yml file, the employees is just one of several.*
 
-<a href= 'models/stg'>see more testing source code here</a>
+<a href= 'models/stg' target="_blank">see more testing source code here</a>
 ```yml
 version: 2
 
@@ -668,7 +668,7 @@ unit_tests:
         - {date_day: '2024-06-02', date_id: 20240602, yr: 2024, quarter_of_yr: 2, mth: 6,  day_of_wk: 0, day_name: 'sunday', weekend_flag: 1, holiday_flag: 0}
         - {date_day: '2024-06-19', date_id: 20240619, yr: 2024, quarter_of_yr: 2, mth: 6,  day_of_wk: 3, day_name: 'wednesday', weekend_flag: 0, holiday_flag: 1}
 ```
-<a href='https://docs.getdbt.com/docs/build/unit-tests'>Read more on unit testing at dbt</a>
+<a href='https://docs.getdbt.com/docs/build/unit-tests' target="_blank">Read more on unit testing at dbt</a>
 
 Week is not part of this test as the the unit test was capturing January 1st 2024 as week 1 when its actually still part week 52 of 2023. That is certainly an edge case (revealed by the UT)!
 However, this was a great candidate for a custom test with one specific task in mid.
@@ -758,7 +758,7 @@ models:
               to: ref('dim_employees_current')
     
 ```
-Last but certainly not least, third party tests area  favorit of mine! I use (seen below) the thiord party package named "dbt_meta_testing" which ensures I have add the proper schema tests ALL of my stages. I typically make sure everything gets at least one unique or not_null test. This can be a hassle later on if you miss it and this package makes sure you do not. To read more about it visit <a href='https://hub.getdbt.com/tnightengale/dbt_meta_testing/latest/'>here.</a> You can also visit the dbt package hub for a variety of test packahes and read about what each one does. <a href='https://hub.getdbt.com/'>visit dbt package hub.</a>
+Last but certainly not least, third party tests area  favorit of mine! I use (seen below) the thiord party package named "dbt_meta_testing" which ensures I have add the proper schema tests ALL of my stages. I typically make sure everything gets at least one unique or not_null test. This can be a hassle later on if you miss it and this package makes sure you do not. To read more about it visit <a href='https://hub.getdbt.com/tnightengale/dbt_meta_testing/latest/' target="_blank">here.</a> You can also visit the dbt package hub for a variety of test packahes and read about what each one does. <a href='https://hub.getdbt.com/' target="_blank">visit dbt package hub.</a>
 
 Here is the package yml:
 ```yml
@@ -796,9 +796,9 @@ What is datamesh? For our purposes, we are using data contractas which are trypi
 
 To enforce constraints, data contracts were used at the consumption layer. These are used to ensure the LOB will have some consistency in the data served to their users. If the data type is changed, the test will throw an error and the model will not materialize which triggers a review for the dev team. This protecst the consumption layer from incosistenices and potential errors or unknown changes that have negative downstream impqacts that no one knows is a problem unitl it becomes a major headache. Note: they are combined in the final yml file with the final testing. Note: we can also version our contracts whihc is great for downstream testing as to not break things but I have not done that here.
 
-<a href='https://www.getdbt.com/blog/what-is-data-mesh'>Read more about DataMesh here.</a>
+<a href='https://www.getdbt.com/blog/what-is-data-mesh' target="_blank">Read more about DataMesh here.</a>
 
-<a href='https://docs.getdbt.com/docs/collaborate/govern/model-versions'>Read more about model versioning with dbt.</a>
+<a href='https://docs.getdbt.com/docs/collaborate/govern/model-versions' target="_blank">Read more about model versioning with dbt.</a>
 
 ```yml
 version: 2
@@ -918,7 +918,7 @@ Example of the finished DAG from dbt docs:
 Example of table level docs in dbt cloud:
 <img src="assets/docs_table_level_desc.png" width="1000">
 
-<a href='https://docs.getdbt.com/docs/build/documentation'>Read more about Documentation in dbt</a>
+<a href='https://docs.getdbt.com/docs/build/documentation' target="_blank">Read more about Documentation in dbt</a>
 
 ## Deployment
 
@@ -941,7 +941,7 @@ Weekly Full Refresh (Sundays only)
 Succcessul Run Example: (the warnings are from an unused path that was not configured, nothing material)
 <img src="assets/run_summary_unused_resource_warning.png" width="1000">
 
-<a href='https://docs.getdbt.com/docs/deploy/deployments'>Read more about deployment and jobs in dbt</a>
+<a href='https://docs.getdbt.com/docs/deploy/deployments' target="_blank">Read more about deployment and jobs in dbt</a>
 
 ## Tableau Dashboard (hosted on Tableau Public)
 
@@ -967,4 +967,4 @@ To recap topics covered:
 6. quick dashboard example of our end product for stakeholders
 
 I also use some surrogate keys but I dont elaborate on them much as that is a Kimbal Modeling technique that you can read up on (its great for optimizing as well). I would highly recommend trying some dbt courses out in the cloud version. Its really fun and there is a ton to learn!
-Visit dbt's learn center <a href='https://learn.getdbt.com/catalog'>here.</a> And mostly, just have fun doing it. It takes a while to really learn and be able to implement the fundamental principles professionally. dbt really mixes the best of software engineering and data engineering into one fun tool!
+Visit dbt's learn center <a href='https://learn.getdbt.com/catalog' target="_blank">here.</a> And mostly, just have fun doing it. It takes a while to really learn and be able to implement the fundamental principles professionally. dbt really mixes the best of software engineering and data engineering into one fun tool!
