@@ -529,7 +529,7 @@ Additionally, we add contracts to this layer to ensure and enforce constrainst/d
 The outcome we expect is a data model found in the below entity relatonship diagram:
 
 The star schema model that is being engineered is as follows:
-<img src="assets/Superstore ERD (2).png" width="1000">
+<img src="assets/Superstore ERD (3).png" width="1000">
 
 ## dbt Tests - Generic to Unit Testing
 
